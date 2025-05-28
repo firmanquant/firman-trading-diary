@@ -90,3 +90,21 @@ button:hover {
 .diary-table tr:hover {
   background-color: #2a2a2a;
 }
+
+.dashboard {
+  background-color: #f4f7fb;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-top: 2rem;
+  border-radius: 8px;
+}
+
+.dashboard h2 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.dashboard p {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+}
