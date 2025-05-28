@@ -466,6 +466,46 @@ const TradingDiary = () => {
   const [weeklyData, setWeeklyData] = useState([]);
   const [fourHourData, setFourHourData] = useState([]);
   const [showTable, setShowTable] = useState(false);
+  const [groqAnalysis, setGroqAnalysis] = useState(''); // State untuk Groq
+
+  // Fungsi untuk memanggil API Groq
+  const fetchGroqAnalysis = async () => {
+    if (!indicators) return; // Pastikan indikator sudah ada
+
+    const prompt = `
+      Analisis saham ${ticker} berdasarkan indikator berikut:
+      - EMA Trend (1D): ${indicators.ema20 > indicators.ema50 ? 'Uptrend' : 'Downtrend'}
+      - EMA Trend (1W): ${indicators.ema20_1W > indicators.ema50_1W ? 'Uptrend' : 'Downtrend'}
+      - RSI: ${indicators.rsi}
+      - MACD (1D): ${indicators.macdLine > indicators.signalLine ? 'Bullish' : 'Bearish'}
+      - MACD (4H): ${indicators.macdLine_4H > indicators.signalLine_4H ? 'Bullish' : 'Bearish'}
+      - DMI (DI+/DI-): ${indicators.plusDI > indicators.minusDI ? 'DI+ Dominan' : 'DI- Dominan'}
+      - ADX: ${indicators.adx}
+      - ATR: ${indicators.atrPct}%
+      - Kalman Diff: ${(indicators.close - indicators.kalman).toFixed(2)}
+      Berikan analisis singkat dan rekomendasi trading (beli/jual/tahan) dalam 3-5 kalimat.
+    `;
+
+    try {
+      const response = await fetch('https://api.groq.com/v1/inference', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama2-70b',
+          prompt: prompt,
+        }),
+      });
+
+      const data = await response.json();
+      setGroqAnalysis(data.response || 'Tidak ada analisis dari Groq.');
+    } catch (error) {
+      console.error('Error calling Groq API:', error);
+      setGroqAnalysis('Gagal mengambil analisis dari Groq.');
+    }
+  };
 
   useEffect(() => {
     const strategyParams = {
@@ -554,6 +594,12 @@ const TradingDiary = () => {
       atrPct,
     });
   }, [ticker]);
+
+  useEffect(() => {
+    if (indicators) {
+      fetchGroqAnalysis();
+    }
+  }, [indicators, ticker]);
 
   useEffect(() => {
     console.log('Entries updated:', entries); // Debug
@@ -664,6 +710,7 @@ const TradingDiary = () => {
             atrPct={indicators.atrPct}
             kalman={indicators.kalman}
             close={indicators.close}
+            groqAnalysis={groqAnalysis}
           />
         ) : (
           <p>Loading indicators...</p>
