@@ -39,7 +39,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Kelas FirmanQuantStrategy (disalin dari FirmanQuantStrategy.js)
+// Kelas FirmanQuantStrategy
 class FirmanQuantStrategy {
   constructor(params) {
     // ===== INPUT PARAMETERS =====
@@ -213,7 +213,6 @@ class FirmanQuantStrategy {
     for (let i = 0; i < plusDI.length; i++) {
       const diDiff = Math.abs(plusDI[i] - minusDI[i]);
       const diSum = plusDI[i] + minusDI[i];
-      // Hindari pembagian dengan nol
       dxValues.push(diSum > 0 ? 100 * (diDiff / diSum) : 0);
     }
 
@@ -247,7 +246,6 @@ class FirmanQuantStrategy {
     const slowEMA = this.calcEMA(closes, slowLen);
     const macdLine = fastEMA - slowEMA;
 
-    // Gabungkan nilai historis dengan nilai terbaru
     const macdLineHistory = [...this.macdLineValues, macdLine];
     const signalLine = this.calcEMA(macdLineHistory, signalLen);
 
@@ -264,7 +262,6 @@ class FirmanQuantStrategy {
     let avgGain = 0;
     let avgLoss = 0;
 
-    // Hitungan awal
     for (let i = 1; i <= length; i++) {
       const change = closes[i] - closes[i - 1];
       if (change > 0) avgGain += change;
@@ -274,7 +271,6 @@ class FirmanQuantStrategy {
     avgGain /= length;
     avgLoss /= length;
 
-    // Hitungan berkelanjutan
     for (let i = length + 1; i < closes.length; i++) {
       const change = closes[i] - closes[i - 1];
       const gain = change > 0 ? change : 0;
@@ -284,7 +280,6 @@ class FirmanQuantStrategy {
       avgLoss = (avgLoss * (length - 1) + loss) / length;
     }
 
-    // Hindari pembagian dengan nol
     const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
     return 100 - (100 / (1 + rs));
   }
@@ -293,10 +288,8 @@ class FirmanQuantStrategy {
   generateSignals() {
     const idx = this.closes.length - 1;
 
-    // Pastikan ada cukup data
     if (idx < 1) return;
 
-    // Crossover EMA
     const emaCrossUp =
       this.ema20Values[idx] > this.ema50Values[idx] &&
       this.ema20Values[idx - 1] <= this.ema50Values[idx - 1];
@@ -305,7 +298,6 @@ class FirmanQuantStrategy {
       this.ema20Values[idx] < this.ema50Values[idx] &&
       this.ema20Values[idx - 1] >= this.ema50Values[idx - 1];
 
-    // Sinyal beli
     const buySignal =
       emaCrossUp &&
       this.rsiValues[idx] > 50 &&
@@ -315,7 +307,6 @@ class FirmanQuantStrategy {
       !isNaN(this.kalmanValues[idx]) &&
       this.closes[idx] > this.kalmanValues[idx];
 
-    // Sinyal jual
     const sellSignal =
       emaCrossDown &&
       this.rsiValues[idx] < 50 &&
@@ -325,7 +316,6 @@ class FirmanQuantStrategy {
       !isNaN(this.kalmanValues[idx]) &&
       this.closes[idx] < this.kalmanValues[idx];
 
-    // Eksekusi trading
     if (buySignal) {
       this.openPositions.push({
         entryTime: Date.now(),
@@ -346,9 +336,7 @@ class FirmanQuantStrategy {
   }
 
   // ===== PELACAKAN KINERJA =====
-  updatePerformance() {
-    // Diimplementasikan sesuai kebutuhan
-  }
+  updatePerformance() {}
 
   getPerformanceSummary() {
     const totalProfit = this.tradeRecords.reduce((sum, trade) => sum + trade.profit, 0);
@@ -383,7 +371,6 @@ class FirmanQuantStrategy {
     };
   }
 
-  // Fungsi untuk menghitung indikator pada data tertentu (untuk timeframe berbeda)
   calcEMAForData(data, length) {
     if (data.length < length) return NaN;
     const multiplier = 2.0 / (length + 1);
@@ -417,7 +404,6 @@ class FirmanQuantStrategy {
 
 // Fungsi untuk menghasilkan data historis simulasi dengan seed
 const simulateHistoricalData = (ticker, numBars = 50) => {
-  // Fungsi untuk menghasilkan angka acak yang konsisten berdasarkan seed
   const mulberry32 = (seed) => {
     let t = seed + 0x6D2B79F5;
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -457,12 +443,12 @@ const simulateHistoricalData = (ticker, numBars = 50) => {
     const close = prevClose + (random - 0.5) * range * 0.1;
     const high = close + random * range * 0.05;
     const low = close - random * range * 0.05;
-    const volume = 1000000 + random * 500000; // Simulasi volume
+    const volume = 1000000 + random * 500000;
     historicalData.push({ close, high, low, volume });
     prevClose = close;
   }
 
-  return historicalData.reverse(); // Bar terbaru di indeks 0
+  return historicalData.reverse();
 };
 
 // Fungsi untuk menghitung ATR
@@ -497,9 +483,9 @@ const TradingDiary = () => {
   const [dailyData, setDailyData] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [fourHourData, setFourHourData] = useState([]);
+  const [showTable, setShowTable] = useState(false); // State untuk toggle tabel
 
   useEffect(() => {
-    // Konfigurasi parameter strategi
     const strategyParams = {
       ema20Len: 20,
       ema50Len: 50,
@@ -518,11 +504,9 @@ const TradingDiary = () => {
       volumeThreshold: 1.5,
     };
 
-    // Inisialisasi strategi
     const newStrategy = new FirmanQuantStrategy(strategyParams);
     setStrategy(newStrategy);
 
-    // Simulasi data historis
     const daily = simulateHistoricalData(ticker);
     const weekly = [];
     for (let i = 0; i < daily.length; i += 5) {
@@ -552,11 +536,9 @@ const TradingDiary = () => {
     setWeeklyData(weekly);
     setFourHourData(fourHour);
 
-    // Reset data strategi dan proses data baru
     newStrategy.resetData();
     daily.forEach(data => newStrategy.processNewData(data));
 
-    // Hitung indikator tambahan (ATR, Trend 1W, 4H MACD)
     const latestIndicators = newStrategy.getLatestIndicators();
     const atrValue = calcATR(daily, 14);
     const atrPct = (atrValue / latestIndicators.close) * 100;
@@ -569,7 +551,6 @@ const TradingDiary = () => {
       9
     );
 
-    // Logging untuk debugging
     console.log('Daily Data:', daily.slice(0, 5));
     console.log('Weekly Data:', weekly.slice(0, 5));
     console.log('Four Hour Data:', fourHour.slice(0, 5));
@@ -642,6 +623,11 @@ const TradingDiary = () => {
   const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
   const totalGainLoss = entries.reduce((sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0), 0);
 
+  // Fungsi untuk toggle tampilan tabel
+  const toggleTable = () => {
+    setShowTable(!showTable);
+  };
+
   return (
     <div className="container">
       <h1>📘 Firman Trading Diary</h1>
@@ -689,7 +675,15 @@ const TradingDiary = () => {
         )}
       </div>
 
+      {/* Tombol "Lihat Hasil" untuk toggle tabel */}
       {entries.length > 0 && (
+        <button className="toggle-table-btn" onClick={toggleTable}>
+          {showTable ? 'Sembunyikan Hasil' : 'Lihat Hasil'}
+        </button>
+      )}
+
+      {/* Tabel hanya ditampilkan jika showTable bernilai true */}
+      {entries.length > 0 && showTable && (
         <table>
           <thead>
             <tr>
