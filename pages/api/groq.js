@@ -1,3 +1,4 @@
+import fetch from 'node-fetch';
 // File: pages/api/groq.js
 
 export default async function handler(req, res) {
