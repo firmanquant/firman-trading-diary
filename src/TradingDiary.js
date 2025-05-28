@@ -39,6 +39,325 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
+// Kelas FirmanQuantStrategy (dari kode yang diberikan)
+class FirmanQuantStrategy {
+  constructor(params) {
+    // ===== INPUT PARAMETERS =====
+    this.ema20Len = params.ema20Len;
+    this.ema50Len = params.ema50Len;
+    this.sma20Len = params.sma20Len;
+    this.sma50Len = params.sma50Len;
+    this.enableKalman = params.enableKalman;
+    this.kalmanLen = params.kalmanLen;
+    this.kalmanGain = params.kalmanGain;
+    this.dmiLen = params.dmiLen;
+    this.adxSmooth = params.adxSmooth;
+    this.macdFast = params.macdFast;
+    this.macdSlow = params.macdSlow;
+    this.macdSignal = params.macdSignal;
+    this.rsiLen = params.rsiLen;
+    this.liquidityLookback = params.liquidityLookback;
+    this.volumeThreshold = params.volumeThreshold;
+
+    // ===== STATE MANAGEMENT =====
+    this.closes = [];
+    this.volumes = [];
+    this.highs = [];
+    this.lows = [];
+
+    // ===== INDICATOR STORAGE =====
+    this.ema20Values = [];
+    this.ema50Values = [];
+    this.sma20Values = [];
+    this.sma50Values = [];
+    this.kalmanValues = [];
+    this.plusDIValues = [];
+    this.minusDIValues = [];
+    this.adxValues = [];
+    this.macdLineValues = [];
+    this.signalLineValues = [];
+    this.rsiValues = [];
+
+    // ===== TRADE RECORDS =====
+    this.tradeRecords = [];
+    this.openPositions = [];
+  }
+
+  processNewData(data) {
+    this.closes.push(data.close);
+    this.volumes.push(data.volume);
+    this.highs.push(data.high);
+    this.lows.push(data.low);
+
+    this.calculateIndicators();
+    this.generateSignals();
+    this.updatePerformance();
+  }
+
+  // ===== INDICATOR CALCULATIONS =====
+  calculateIndicators() {
+    const idx = this.closes.length - 1;
+
+    // Moving Averages
+    this.ema20Values.push(this.calcEMA(this.closes, this.ema20Len));
+    this.ema50Values.push(this.calcEMA(this.closes, this.ema50Len));
+    this.sma20Values.push(this.calcSMA(this.closes, this.sma20Len));
+    this.sma50Values.push(this.calcSMA(this.closes, this.sma50Len));
+
+    // Kalman Filter
+    const kalmanVal = this.enableKalman
+      ? this.kalmanFilter(this.closes[idx], this.kalmanGain)
+      : NaN;
+    this.kalmanValues.push(kalmanVal);
+
+    // DMI/ADX
+    const dmi = this.calcDMI(this.highs, this.lows, this.closes, this.dmiLen, this.adxSmooth);
+    this.plusDIValues.push(dmi.plusDI);
+    this.minusDIValues.push(dmi.minusDI);
+    this.adxValues.push(dmi.adx);
+
+    // MACD
+    const macd = this.calcMACD(this.closes, this.macdFast, this.macdSlow, this.macdSignal);
+    this.macdLineValues.push(macd.macdLine);
+    this.signalLineValues.push(macd.signalLine);
+
+    // RSI
+    this.rsiValues.push(this.calcRSI(this.closes, this.rsiLen));
+  }
+
+  calcEMA(data, length) {
+    if (data.length < length) return NaN;
+    const multiplier = 2.0 / (length + 1);
+
+    let ema = data.slice(0, length).reduce((sum, val) => sum + val, 0) / length;
+
+    for (let i = length; i < data.length; i++) {
+      ema = (data[i] - ema) * multiplier + ema;
+    }
+    return ema;
+  }
+
+  calcSMA(data, length) {
+    if (data.length < length) return NaN;
+    const slice = data.slice(data.length - length);
+    return slice.reduce((sum, val) => sum + val, 0) / length;
+  }
+
+  kalmanFilter(currentValue, gain) {
+    if (this.kalmanValues.length === 0) return currentValue;
+    const prevKalman = this.kalmanValues[this.kalmanValues.length - 1];
+    return prevKalman + gain * (currentValue - prevKalman);
+  }
+
+  calcDMI(highs, lows, closes, diLen, adxSmooth) {
+    const trValues = [];
+    const plusDMValues = [];
+    const minusDMValues = [];
+
+    // 1. Calculate True Range and Directional Movement
+    for (let i = 1; i < highs.length; i++) {
+      const tr = Math.max(
+        highs[i] - lows[i],
+        Math.max(
+          Math.abs(highs[i] - closes[i - 1]),
+          Math.abs(lows[i] - closes[i - 1])
+        )
+      );
+      trValues.push(tr);
+
+      const upMove = highs[i] - highs[i - 1];
+      const downMove = lows[i - 1] - lows[i];
+
+      const plusDM = upMove > downMove && upMove > 0 ? upMove : 0;
+      const minusDM = downMove > upMove && downMove > 0 ? downMove : 0;
+
+      plusDMValues.push(plusDM);
+      minusDMValues.push(minusDM);
+    }
+
+    // 2. Smooth the values (Wilder's smoothing)
+    const smoothedTR = this.wilderSmoothing(trValues, diLen);
+    const smoothedPlusDM = this.wilderSmoothing(plusDMValues, diLen);
+    const smoothedMinusDM = this.wilderSmoothing(minusDMValues, diLen);
+
+    // 3. Calculate Directional Indicators
+    const plusDI = [];
+    const minusDI = [];
+    for (let i = 0; i < smoothedTR.length; i++) {
+      plusDI.push(100 * smoothedPlusDM[i] / smoothedTR[i]);
+      minusDI.push(100 * smoothedMinusDM[i] / smoothedTR[i]);
+    }
+
+    // 4. Calculate ADX
+    const dxValues = [];
+    for (let i = 0; i < plusDI.length; i++) {
+      const diDiff = Math.abs(plusDI[i] - minusDI[i]);
+      const diSum = plusDI[i] + minusDI[i];
+      dxValues.push(100 * (diDiff / (diSum === 0 ? 1 : diSum)));
+    }
+
+    const adx = this.wilderSmoothing(dxValues, adxSmooth);
+
+    return {
+      plusDI: plusDI.length > 0 ? plusDI[plusDI.length - 1] : NaN,
+      minusDI: minusDI.length > 0 ? minusDI[minusDI.length - 1] : NaN,
+      adx: adx.length > 0 ? adx[adx.length - 1] : NaN,
+    };
+  }
+
+  wilderSmoothing(values, period) {
+    if (values.length < period) return [];
+
+    const smoothed = [];
+    const initialSum = values.slice(0, period).reduce((sum, val) => sum + val, 0);
+    smoothed.push(initialSum / period);
+
+    for (let i = period; i < values.length; i++) {
+      const prev = smoothed[smoothed.length - 1];
+      const newValue = (prev * (period - 1) + values[i]) / period;
+      smoothed.push(newValue);
+    }
+
+    return smoothed;
+  }
+
+  calcMACD(closes, fastLen, slowLen, signalLen) {
+    const fastEMA = this.calcEMA(closes, fastLen);
+    const slowEMA = this.calcEMA(closes, slowLen);
+    const macdLine = fastEMA - slowEMA;
+
+    const macdLineHistory = [...this.macdLineValues, macdLine];
+    const signalLine = this.calcEMA(macdLineHistory, signalLen);
+
+    return {
+      macdLine,
+      signalLine,
+      histogram: macdLine - signalLine,
+    };
+  }
+
+  calcRSI(closes, length) {
+    if (closes.length < length + 1) return NaN;
+
+    let avgGain = 0;
+    let avgLoss = 0;
+
+    // Initial calculation
+    for (let i = 1; i <= length; i++) {
+      const change = closes[i] - closes[i - 1];
+      if (change > 0) avgGain += change;
+      else avgLoss -= change;
+    }
+
+    avgGain /= length;
+    avgLoss /= length;
+
+    // Subsequent calculations
+    for (let i = length + 1; i < closes.length; i++) {
+      const change = closes[i] - closes[i - 1];
+      const gain = Math.max(0, change);
+      const loss = Math.max(0, -change);
+
+      avgGain = (avgGain * (length - 1) + gain) / length;
+      avgLoss = (avgLoss * (length - 1) + loss) / length;
+    }
+
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  // ===== SIGNAL GENERATION =====
+  generateSignals() {
+    const idx = this.closes.length - 1;
+
+    if (idx < 1) return;
+
+    const emaCrossUp =
+      this.ema20Values[idx] > this.ema50Values[idx] &&
+      this.ema20Values[idx - 1] <= this.ema50Values[idx - 1];
+
+    const emaCrossDown =
+      this.ema20Values[idx] < this.ema50Values[idx] &&
+      this.ema20Values[idx - 1] >= this.ema50Values[idx - 1];
+
+    const buySignal =
+      emaCrossUp &&
+      this.rsiValues[idx] > 50 &&
+      this.macdLineValues[idx] > this.signalLineValues[idx] &&
+      this.plusDIValues[idx] > this.minusDIValues[idx] &&
+      this.adxValues[idx] > 20 &&
+      !isNaN(this.kalmanValues[idx]) &&
+      this.closes[idx] > this.kalmanValues[idx];
+
+    const sellSignal =
+      emaCrossDown &&
+      this.rsiValues[idx] < 50 &&
+      this.macdLineValues[idx] < this.signalLineValues[idx] &&
+      this.minusDIValues[idx] > this.plusDIValues[idx] &&
+      this.adxValues[idx] > 20 &&
+      !isNaN(this.kalmanValues[idx]) &&
+      this.closes[idx] < this.kalmanValues[idx];
+
+    // Execute trading logic
+    if (buySignal) {
+      this.openPositions.push({
+        entryTime: Date.now(),
+        entryPrice: this.closes[idx],
+        type: 'LONG',
+      });
+    }
+
+    if (sellSignal && this.openPositions.length > 0) {
+      const position = this.openPositions.shift();
+      this.tradeRecords.push({
+        position,
+        exitPrice: this.closes[idx],
+        exitTime: Date.now(),
+        profit: this.closes[idx] - position.entryPrice,
+      });
+    }
+  }
+
+  // ===== PERFORMANCE TRACKING =====
+  updatePerformance() {
+    // Implementasi pembaruan metrik kinerja
+  }
+
+  getPerformanceSummary() {
+    const totalProfit = this.tradeRecords.reduce((sum, trade) => sum + trade.profit, 0);
+    const winCount = this.tradeRecords.filter(t => t.profit > 0).length;
+    const winRate =
+      this.tradeRecords.length > 0 ? (winCount / this.tradeRecords.length) * 100 : 0;
+
+    return {
+      totalTrades: this.tradeRecords.length,
+      totalProfit,
+      winRate,
+      winTrades: winCount,
+      lossTrades: this.tradeRecords.length - winCount,
+    };
+  }
+
+  // Fungsi tambahan untuk mendapatkan indikator terbaru
+  getLatestIndicators() {
+    const idx = this.closes.length - 1;
+    return {
+      ema20: this.ema20Values[idx],
+      ema50: this.ema50Values[idx],
+      ema20Prev: idx > 0 ? this.ema20Values[idx - 1] : NaN,
+      ema50Prev: idx > 0 ? this.ema50Values[idx - 1] : NaN,
+      rsi: this.rsiValues[idx],
+      macdLine: this.macdLineValues[idx],
+      signalLine: this.signalLineValues[idx],
+      plusDI: this.plusDIValues[idx],
+      minusDI: this.minusDIValues[idx],
+      adx: this.adxValues[idx],
+      kalman: this.kalmanValues[idx],
+      close: this.closes[idx],
+    };
+  }
+}
+
 // Fungsi untuk menghasilkan data historis simulasi (50 bar terakhir)
 const simulateHistoricalData = (ticker, numBars = 50) => {
   const firstChar = ticker.charAt(0).toUpperCase();
@@ -67,215 +386,25 @@ const simulateHistoricalData = (ticker, numBars = 50) => {
     const close = prevClose + (Math.random() - 0.5) * range * 0.1;
     const high = close + Math.random() * range * 0.05;
     const low = close - Math.random() * range * 0.05;
-    historicalData.push({ close, high, low });
+    const volume = 1000000 + Math.random() * 500000; // Simulasi volume
+    historicalData.push({ close, high, low, volume });
     prevClose = close;
   }
 
   return historicalData.reverse(); // Bar terbaru di indeks 0
 };
 
-// Fungsi untuk menghitung EMA (dari kode Java)
-const calcEMA = (data, length) => {
-  if (data.length < length) return NaN;
-  let ema = data.slice(0, length).reduce((sum, val) => sum + val.close, 0) / length;
-  const multiplier = 2.0 / (length + 1);
-  for (let i = length; i < data.length; i++) {
-    ema = (data[i].close - ema) * multiplier + ema;
-  }
-  return ema;
-};
-
-// Fungsi untuk menghitung RSI (dari kode Java)
-const calcRSI = (data, length) => {
-  if (data.length < length + 1) return NaN;
-
-  let avgGain = 0, avgLoss = 0;
-  for (let i = 1; i <= length; i++) {
-    const change = data[i].close - data[i - 1].close;
-    if (change > 0) avgGain += change;
-    else avgLoss -= change;
-  }
-
-  avgGain /= length;
-  avgLoss /= length;
-
-  for (let i = length + 1; i < data.length; i++) {
-    const change = data[i].close - data[i - 1].close;
-    const gain = Math.max(0, change);
-    const loss = Math.max(0, -change);
-    avgGain = ((avgGain * (length - 1)) + gain) / length;
-    avgLoss = ((avgLoss * (length - 1)) + loss) / length;
-  }
-
-  const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-  return 100 - (100 / (1 + rs));
-};
-
-// Fungsi untuk menghitung MACD (dari kode Java)
-const calcMACD = (data, fastLen, slowLen, signalLen) => {
-  const fastEMA = calcEMA(data, fastLen);
-  const slowEMA = calcEMA(data, slowLen);
-  const macdLine = fastEMA - slowEMA;
-
-  const macdLineHistory = [];
-  for (let i = data.length - 1; i >= 0; i--) {
-    const emaFast = calcEMA(data.slice(i), fastLen);
-    const emaSlow = calcEMA(data.slice(i), slowLen);
-    macdLineHistory.push(emaFast - emaSlow);
-  }
-  const signalLine = calcEMA(macdLineHistory.map(val => ({ close: val })), signalLen);
-
-  return { macdLine, signalLine };
-};
-
-// Fungsi Wilder's Smoothing (dari kode Java)
-const wilderSmoothing = (values, period) => {
-  const smoothed = [];
-  const sum = values.slice(0, period).reduce((a, b) => a + b, 0);
-  smoothed.push(sum / period);
-
-  for (let i = period; i < values.length; i++) {
-    const prev = smoothed[smoothed.length - 1];
-    const newValue = (prev * (period - 1) + values[i]) / period;
-    smoothed.push(newValue);
-  }
-  return smoothed;
-};
-
-// Fungsi untuk menghitung DMI/ADX (dari kode Java)
-const calcDMI = (highs, lows, closes, diLen, adxSmooth) => {
-  const trValues = [];
-  const plusDMValues = [];
-  const minusDMValues = [];
-
-  for (let i = 1; i < highs.length; i++) {
-    const tr = Math.max(
-      highs[i].high - lows[i].low,
-      Math.max(
-        Math.abs(highs[i].high - closes[i - 1].close),
-        Math.abs(lows[i].low - closes[i - 1].close)
-      )
-    );
-    trValues.push(tr);
-
-    const upMove = highs[i].high - highs[i - 1].high;
-    const downMove = lows[i - 1].low - lows[i].low;
-
-    const plusDM = (upMove > downMove && upMove > 0) ? upMove : 0;
-    const minusDM = (downMove > upMove && downMove > 0) ? downMove : 0;
-
-    plusDMValues.push(plusDM);
-    minusDMValues.push(minusDM);
-  }
-
-  const smoothedTR = wilderSmoothing(trValues, diLen);
-  const smoothedPlusDM = wilderSmoothing(plusDMValues, diLen);
-  const smoothedMinusDM = wilderSmoothing(minusDMValues, diLen);
-
-  const plusDI = [];
-  const minusDI = [];
-  for (let i = 0; i < smoothedTR.length; i++) {
-    plusDI.push(100 * smoothedPlusDM[i] / smoothedTR[i]);
-    minusDI.push(100 * smoothedMinusDM[i] / smoothedTR[i]);
-  }
-
-  const dxValues = [];
-  for (let i = 0; i < plusDI.length; i++) {
-    const diDiff = Math.abs(plusDI[i] - minusDI[i]);
-    const diSum = plusDI[i] + minusDI[i];
-    dxValues.push(100 * (diDiff / diSum));
-  }
-
-  const adx = wilderSmoothing(dxValues, adxSmooth);
-
-  return {
-    plusDI: plusDI[plusDI.length - 1],
-    minusDI: minusDI[minusDI.length - 1],
-    adx: adx[adx.length - 1],
-  };
-};
-
-// Fungsi untuk menghitung Kalman Filter (dari kode Java)
-const calcKalman = (data, gain, kalmanValues) => {
-  if (kalmanValues.length === 0) return data[data.length - 1].close;
-  const prevKalman = kalmanValues[kalmanValues.length - 1];
-  return prevKalman + gain * (data[0].close - prevKalman);
-};
-
-// Fungsi untuk menghitung ATR (dari kode Java)
+// Fungsi untuk menghitung ATR
 const calcATR = (data, length) => {
   let trSum = 0;
   for (let i = 0; i < length && i < data.length - 1; i++) {
     const high = data[i].high;
     const low = data[i].low;
     const prevClose = data[i + 1].close;
-    const tr = Math.max(
-      high - low,
-      Math.abs(high - prevClose),
-      Math.abs(low - prevClose)
-    );
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
     trSum += tr;
   }
   return trSum / length;
-};
-
-// Fungsi untuk menghitung indikator
-const calculateIndicators = (dailyData, weeklyData, fourHourData) => {
-  const close = dailyData[0].close;
-
-  // EMA20 dan EMA50 (Daily)
-  const ema20 = calcEMA(dailyData, 20);
-  const ema50 = calcEMA(dailyData, 50);
-  const ema20Prev = calcEMA(dailyData.slice(1), 20);
-  const ema50Prev = calcEMA(dailyData.slice(1), 50);
-
-  // EMA20 dan EMA50 (Weekly untuk Trend 1W)
-  const ema20_1W = calcEMA(weeklyData, 20);
-  const ema50_1W = calcEMA(weeklyData, 50);
-
-  // RSI (Daily)
-  const rsi = calcRSI(dailyData, 14);
-
-  // MACD (Daily)
-  const { macdLine, signalLine } = calcMACD(dailyData, 12, 26, 9);
-
-  // MACD 4H
-  const { macdLine: macdLine_4H, signalLine: signalLine_4H } = calcMACD(fourHourData, 12, 26, 9);
-
-  // DMI/ADX (Daily)
-  const { plusDI, minusDI, adx } = calcDMI(dailyData, dailyData, dailyData, 14, 14);
-
-  // Kalman Filter (Daily)
-  const kalmanValues = [];
-  for (let i = dailyData.length - 1; i >= 0; i--) {
-    const kalman = calcKalman(dailyData.slice(i), 0.5, kalmanValues);
-    kalmanValues.push(kalman);
-  }
-  const kalman = kalmanValues[kalmanValues.length - 1];
-
-  // ATR (Daily)
-  const atrValue = calcATR(dailyData, 14);
-  const atrPct = (atrValue / close) * 100;
-
-  return {
-    ema20,
-    ema50,
-    ema20Prev,
-    ema50Prev,
-    ema20_1W,
-    ema50_1W,
-    rsi,
-    macdLine,
-    signalLine,
-    macdLine_4H,
-    signalLine_4H,
-    plusDI,
-    minusDI,
-    adx,
-    atrPct,
-    kalman,
-    close,
-  };
 };
 
 const TradingDiary = () => {
@@ -292,12 +421,37 @@ const TradingDiary = () => {
     emotion: ''
   });
   const [ticker, setTicker] = useState('BBCA');
+  const [strategy, setStrategy] = useState(null);
+  const [indicators, setIndicators] = useState(null);
   const [dailyData, setDailyData] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [fourHourData, setFourHourData] = useState([]);
-  const [indicators, setIndicators] = useState(null);
 
   useEffect(() => {
+    // Konfigurasi parameter strategi
+    const strategyParams = {
+      ema20Len: 20,
+      ema50Len: 50,
+      sma20Len: 20,
+      sma50Len: 50,
+      enableKalman: true,
+      kalmanLen: 20,
+      kalmanGain: 0.5,
+      dmiLen: 14,
+      adxSmooth: 14,
+      macdFast: 12,
+      macdSlow: 26,
+      macdSignal: 9,
+      rsiLen: 14,
+      liquidityLookback: 50,
+      volumeThreshold: 1.5,
+    };
+
+    // Inisialisasi strategi
+    const newStrategy = new FirmanQuantStrategy(strategyParams);
+    setStrategy(newStrategy);
+
+    // Simulasi data historis
     const daily = simulateHistoricalData(ticker);
     const weekly = [];
     for (let i = 0; i < daily.length; i += 5) {
@@ -306,7 +460,8 @@ const TradingDiary = () => {
         const close = slice[0].close;
         const high = Math.max(...slice.map(d => d.high));
         const low = Math.min(...slice.map(d => d.low));
-        weekly.push({ close, high, low });
+        const volume = slice[0].volume;
+        weekly.push({ close, high, low, volume });
       }
     }
 
@@ -317,7 +472,8 @@ const TradingDiary = () => {
         const close = slice[0].close;
         const high = Math.max(...slice.map(d => d.high));
         const low = Math.min(...slice.map(d => d.low));
-        fourHour.push({ close, high, low });
+        const volume = slice[0].volume;
+        fourHour.push({ close, high, low, volume });
       }
     }
 
@@ -325,10 +481,30 @@ const TradingDiary = () => {
     setWeeklyData(weekly);
     setFourHourData(fourHour);
 
-    if (daily.length > 0 && weekly.length > 0 && fourHour.length > 0) {
-      const calculatedIndicators = calculateIndicators(daily, weekly, fourHour);
-      setIndicators(calculatedIndicators);
-    }
+    // Proses data menggunakan strategi
+    daily.forEach(data => newStrategy.processNewData(data));
+
+    // Hitung indikator tambahan (ATR, Trend 1W, 4H MACD)
+    const latestIndicators = newStrategy.getLatestIndicators();
+    const atrValue = calcATR(daily, 14);
+    const atrPct = (atrValue / latestIndicators.close) * 100;
+    const ema20_1W = calcEMA(weekly, 20);
+    const ema50_1W = calcEMA(weekly, 50);
+    const { macdLine: macdLine_4H, signalLine: signalLine_4H } = newStrategy.calcMACD(
+      fourHour.map(d => d.close),
+      12,
+      26,
+      9
+    );
+
+    setIndicators({
+      ...latestIndicators,
+      ema20_1W,
+      ema50_1W,
+      macdLine_4H,
+      signalLine_4H,
+      atrPct,
+    });
   }, [ticker]);
 
   useEffect(() => {
