@@ -36,13 +36,12 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     container.appendChild(script);
   }, [symbol]);
 
-  return <div id="tv_chart_container" style={{ height: "350px" }} />; // Tinggi chart dikurangi
+  return <div id="tv_chart_container" style={{ height: "350px" }} />;
 };
 
 // Kelas FirmanQuantStrategy
 class FirmanQuantStrategy {
   constructor(params) {
-    // ===== INPUT PARAMETERS =====
     this.ema20Len = params.ema20Len;
     this.ema50Len = params.ema50Len;
     this.sma20Len = params.sma20Len;
@@ -59,13 +58,11 @@ class FirmanQuantStrategy {
     this.liquidityLookback = params.liquidityLookback;
     this.volumeThreshold = params.volumeThreshold;
 
-    // ===== STATE MANAGEMENT =====
     this.closes = [];
     this.volumes = [];
     this.highs = [];
     this.lows = [];
 
-    // ===== INDICATOR STORAGE =====
     this.ema20Values = [];
     this.ema50Values = [];
     this.sma20Values = [];
@@ -78,7 +75,6 @@ class FirmanQuantStrategy {
     this.signalLineValues = [];
     this.rsiValues = [];
 
-    // ===== TRADE RECORDS =====
     this.tradeRecords = [];
     this.openPositions = [];
   }
@@ -272,7 +268,6 @@ class FirmanQuantStrategy {
     return 100 - (100 / (1 + rs));
   }
 
-  // ===== GENERASI SINYAL =====
   generateSignals() {
     const idx = this.closes.length - 1;
 
@@ -323,7 +318,6 @@ class FirmanQuantStrategy {
     }
   }
 
-  // ===== PELACAKAN KINERJA =====
   updatePerformance() {}
 
   getPerformanceSummary() {
@@ -340,7 +334,6 @@ class FirmanQuantStrategy {
     };
   }
 
-  // Fungsi tambahan untuk mendapatkan indikator terbaru
   getLatestIndicators() {
     const idx = this.closes.length - 1;
     return {
@@ -455,6 +448,7 @@ const calcATR = (data, length) => {
 const TradingDiary = () => {
   const [entries, setEntries] = useState(() => {
     const savedEntries = localStorage.getItem('tradingEntries');
+    console.log('Initial entries from localStorage:', savedEntries); // Debug
     return savedEntries ? JSON.parse(savedEntries) : [];
   });
   const [form, setForm] = useState({
@@ -562,6 +556,7 @@ const TradingDiary = () => {
   }, [ticker]);
 
   useEffect(() => {
+    console.log('Entries updated:', entries); // Debug
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
@@ -584,15 +579,23 @@ const TradingDiary = () => {
       entry: parseFloat(form.entry),
       exit: parseFloat(form.exit),
     };
-    setEntries([...entries, newEntry]);
+    setEntries(prevEntries => {
+      const updatedEntries = [...prevEntries, newEntry];
+      console.log('New entry added:', newEntry); // Debug
+      console.log('Updated entries:', updatedEntries); // Debug
+      return updatedEntries;
+    });
     setForm({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
     alert('Entri berhasil ditambahkan!');
   };
 
   const handleDelete = (index) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus entri ini?')) {
-      const newEntries = entries.filter((_, i) => i !== index);
-      setEntries(newEntries);
+      setEntries(prevEntries => {
+        const newEntries = prevEntries.filter((_, i) => i !== index);
+        console.log('Entry deleted, new entries:', newEntries); // Debug
+        return newEntries;
+      });
       alert('Entri berhasil dihapus!');
     }
   };
@@ -612,7 +615,12 @@ const TradingDiary = () => {
   const totalGainLoss = entries.reduce((sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0), 0);
 
   const toggleTable = () => {
-    setShowTable(!showTable);
+    setShowTable(prevShowTable => {
+      const newShowTable = !prevShowTable;
+      console.log('showTable toggled to:', newShowTable); // Debug
+      console.log('Entries at toggle:', entries); // Debug
+      return newShowTable;
+    });
   };
 
   return (
@@ -668,7 +676,7 @@ const TradingDiary = () => {
         </button>
       )}
 
-      {entries.length > 0 && showTable && (
+      {entries.length > 0 && showTable ? (
         <table>
           <thead>
             <tr>
@@ -684,24 +692,32 @@ const TradingDiary = () => {
             </tr>
           </thead>
           <tbody>
-            {entries.map((e, i) => (
-              <tr key={i}>
-                <td>{e.date}</td>
-                <td>{e.ticker}</td>
-                <td>{e.entry}</td>
-                <td>{e.exit}</td>
-                <td>{calcResult(e.entry, e.exit)}</td>
-                <td>{calcGain(e.entry, e.exit)}%</td>
-                <td>{e.reason || 'N/A'}</td>
-                <td>{e.emotion || 'N/A'}</td>
-                <td>
-                  <button onClick={() => handleDelete(i)}>Hapus</button>
-                </td>
+            {entries.length > 0 ? (
+              entries.map((e, i) => (
+                <tr key={i}>
+                  <td>{e.date}</td>
+                  <td>{e.ticker}</td>
+                  <td>{e.entry}</td>
+                  <td>{e.exit}</td>
+                  <td>{calcResult(e.entry, e.exit)}</td>
+                  <td>{calcGain(e.entry, e.exit)}%</td>
+                  <td>{e.reason || 'N/A'}</td>
+                  <td>{e.emotion || 'N/A'}</td>
+                  <td>
+                    <button onClick={() => handleDelete(i)}>Hapus</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="9">Tidak ada data entri.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
-      )}
+      ) : entries.length === 0 && showTable ? (
+        <p>Tidak ada data entri untuk ditampilkan.</p>
+      ) : null}
 
       <TVChart symbol={`IDX:${ticker}`} />
     </div>
