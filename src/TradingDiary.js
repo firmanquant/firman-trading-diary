@@ -48,8 +48,8 @@ const simulateStockPrice = (ticker) => {
   // Simulasi kategori saham berdasarkan huruf awal (A-E: blue chip, F-J: menengah, K-Z: kecil)
   if (firstChar >= 'A' && firstChar <= 'E') {
     // Blue chip (contoh: BBCA, BBNI) - Harga tinggi
-    basePrice = 8000; // Harga dasar tinggi
-    range = 1000; // Rentang fluktuasi
+    basePrice = 8000;
+    range = 1000;
   } else if (firstChar >= 'F' && firstChar <= 'J') {
     // Saham menengah (contoh: INDF, ICBP) - Harga menengah
     basePrice = 4000;
@@ -68,24 +68,44 @@ const simulateStockPrice = (ticker) => {
   const variation = (hash % 1000) - 500; // Variasi acak berdasarkan ticker (-500 hingga +500)
 
   return {
-    basePrice: basePrice + variation,
-    range,
+    close: basePrice + variation + (Math.random() - 0.5) * range, // Harga penutupan simulasi
+    closePrev: basePrice + variation + (Math.random() - 0.5) * range * 0.9, // Harga penutupan kemarin
   };
 };
 
-// Fungsi simulasi untuk menghitung indikator berdasarkan harga penutupan
-const simulateIndicators = (closePrice) => {
-  const ema20 = closePrice * 1.02;
-  const ema50 = closePrice * 1.01;
-  const ema20Prev = closePrice * 1.015;
-  const ema50Prev = closePrice * 1.005;
-  const rsi = Math.random() * 100;
-  const macdLine = (Math.random() - 0.5) * 2;
-  const signalLine = macdLine * 0.9;
-  const plusDI = Math.random() * 50;
-  const minusDI = Math.random() * 50;
-  const adx = Math.random() * 50;
-  const kalman = closePrice * 0.99;
+// Fungsi simulasi untuk menghitung indikator berdasarkan harga penutupan kemarin
+const simulateIndicators = (close, closePrev) => {
+  // Simulasi EMA (menggunakan pendekatan sederhana karena tidak ada data historis)
+  const alpha20 = 2 / (20 + 1);
+  const alpha50 = 2 / (50 + 1);
+  const ema20 = closePrev * (1 - alpha20) + close * alpha20; // Simulasi EMA20
+  const ema50 = closePrev * (1 - alpha50) + close * alpha50; // Simulasi EMA50
+  const ema20Prev = closePrev * (1 - alpha20) + (closePrev * 0.99) * alpha20; // Simulasi EMA20 kemarin
+  const ema50Prev = closePrev * (1 - alpha50) + (closePrev * 0.99) * alpha50; // Simulasi EMA50 kemarin
+
+  // Simulasi RSI (menggunakan perubahan harga sederhana)
+  const change = close - closePrev;
+  const gain = change > 0 ? change : 0;
+  const loss = change < 0 ? -change : 0;
+  const avgGain = gain * 0.5; // Simulasi rata-rata gain
+  const avgLoss = loss * 0.5; // Simulasi rata-rata loss
+  const rs = avgGain / (avgLoss || 1); // Hindari pembagian dengan 0
+  const rsi = 100 - (100 / (1 + rs));
+
+  // Simulasi MACD
+  const macdFast = closePrev * (1 - 2 / (12 + 1)) + close * (2 / (12 + 1)); // Simulasi EMA12
+  const macdSlow = closePrev * (1 - 2 / (26 + 1)) + close * (2 / (26 + 1)); // Simulasi EMA26
+  const macdLine = macdFast - macdSlow;
+  const signalLine = macdLine * 0.9; // Simulasi signal line (pendekatan sederhana)
+
+  // Simulasi DMI/ADX
+  const plusDI = Math.random() * 50; // Simulasi +DI
+  const minusDI = Math.random() * 50; // Simulasi -DI
+  const adx = Math.random() * 50; // Simulasi ADX
+
+  // Simulasi Kalman Filter
+  const kalmanGain = 0.5;
+  const kalman = closePrev + kalmanGain * (close - closePrev);
 
   return {
     ema20,
@@ -99,6 +119,7 @@ const simulateIndicators = (closePrice) => {
     minusDI,
     adx,
     kalman,
+    close,
   };
 };
 
@@ -116,29 +137,12 @@ const TradingDiary = () => {
     emotion: ''
   });
   const [ticker, setTicker] = useState('BBCA');
-  const [currentClose, setCurrentClose] = useState(() => {
-    const stock = simulateStockPrice('BBCA');
-    return stock.basePrice + (Math.random() - 0.5) * stock.range;
-  });
+  const [prices, setPrices] = useState(() => simulateStockPrice('BBCA'));
 
   // Perbarui harga penutupan saat ticker berubah
   useEffect(() => {
-    const selectedStock = simulateStockPrice(ticker);
-    const newBasePrice = selectedStock.basePrice;
-    const newPrice = newBasePrice + (Math.random() - 0.5) * selectedStock.range;
-    setCurrentClose(newPrice);
-  }, [ticker]);
-
-  // Simulasi fluktuasi harga setiap 10 detik
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentClose(prev => {
-        const selectedStock = simulateStockPrice(ticker);
-        const fluctuation = (Math.random() - 0.5) * selectedStock.range * 0.1; // Fluktuasi lebih kecil
-        return prev + fluctuation;
-      });
-    }, 10000);
-    return () => clearInterval(interval);
+    const newPrices = simulateStockPrice(ticker);
+    setPrices(newPrices);
   }, [ticker]);
 
   // Simpan entries ke localStorage setiap kali entries berubah
@@ -146,7 +150,7 @@ const TradingDiary = () => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  const indicators = simulateIndicators(currentClose);
+  const indicators = simulateIndicators(prices.close, prices.closePrev);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -228,7 +232,7 @@ const TradingDiary = () => {
           minusDI={indicators.minusDI}
           adx={indicators.adx}
           kalman={indicators.kalman}
-          close={currentClose}
+          close={indicators.close}
         />
       </div>
 
