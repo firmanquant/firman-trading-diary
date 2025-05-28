@@ -39,55 +39,53 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Fungsi untuk mengambil data historis dari API
-const fetchHistoricalData = async (ticker, timeframe = 'daily') => {
-  try {
-    const response = await fetch(`/api/stock?ticker=${ticker}&timeframe=${timeframe}`);
-    const data = await response.json();
+// Fungsi untuk menghasilkan data historis simulasi (50 bar terakhir)
+const simulateHistoricalData = (ticker, numBars = 50) => {
+  const firstChar = ticker.charAt(0).toUpperCase();
+  let basePrice, range;
 
-    if (data['Error Message']) {
-      throw new Error(data['Error Message']);
-    }
-
-    let timeSeries;
-    if (timeframe === 'weekly') {
-      timeSeries = data['Weekly Time Series'];
-    } else if (timeframe === '4h') {
-      timeSeries = data['Time Series (60min)'];
-    } else {
-      timeSeries = data['Time Series (Daily)'];
-    }
-
-    if (!timeSeries) {
-      throw new Error('No time series data available');
-    }
-
-    const historicalData = Object.entries(timeSeries).map(([date, values]) => ({
-      date,
-      close: parseFloat(values['4. close']),
-      high: parseFloat(values['2. high']),
-      low: parseFloat(values['3. low']),
-    }));
-
-    return historicalData.slice(0, 50); // Ambil 50 bar terakhir
-  } catch (error) {
-    console.error('Failed to fetch historical data:', error);
-    return [];
+  if (firstChar >= 'A' && firstChar <= 'E') {
+    basePrice = 8000;
+    range = 1000;
+  } else if (firstChar >= 'F' && firstChar <= 'J') {
+    basePrice = 4000;
+    range = 500;
+  } else {
+    basePrice = 500;
+    range = 100;
   }
+
+  let hash = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const variation = (hash % 1000) - 500;
+
+  const historicalData = [];
+  let prevClose = basePrice + variation;
+  for (let i = 0; i < numBars; i++) {
+    const close = prevClose + (Math.random() - 0.5) * range * 0.1;
+    const high = close + Math.random() * range * 0.05;
+    const low = close - Math.random() * range * 0.05;
+    historicalData.push({ close, high, low });
+    prevClose = close;
+  }
+
+  return historicalData.reverse(); // Bar terbaru di indeks 0
 };
 
-// Fungsi untuk menghitung EMA
+// Fungsi untuk menghitung EMA (dari kode Java)
 const calcEMA = (data, length) => {
   if (data.length < length) return NaN;
-  const multiplier = 2.0 / (length + 1);
   let ema = data.slice(0, length).reduce((sum, val) => sum + val.close, 0) / length;
+  const multiplier = 2.0 / (length + 1);
   for (let i = length; i < data.length; i++) {
     ema = (data[i].close - ema) * multiplier + ema;
   }
   return ema;
 };
 
-// Fungsi untuk menghitung RSI
+// Fungsi untuk menghitung RSI (dari kode Java)
 const calcRSI = (data, length) => {
   if (data.length < length + 1) return NaN;
 
@@ -113,7 +111,7 @@ const calcRSI = (data, length) => {
   return 100 - (100 / (1 + rs));
 };
 
-// Fungsi untuk menghitung MACD
+// Fungsi untuk menghitung MACD (dari kode Java)
 const calcMACD = (data, fastLen, slowLen, signalLen) => {
   const fastEMA = calcEMA(data, fastLen);
   const slowEMA = calcEMA(data, slowLen);
@@ -130,7 +128,7 @@ const calcMACD = (data, fastLen, slowLen, signalLen) => {
   return { macdLine, signalLine };
 };
 
-// Fungsi Wilder's Smoothing
+// Fungsi Wilder's Smoothing (dari kode Java)
 const wilderSmoothing = (values, period) => {
   const smoothed = [];
   const sum = values.slice(0, period).reduce((a, b) => a + b, 0);
@@ -144,7 +142,7 @@ const wilderSmoothing = (values, period) => {
   return smoothed;
 };
 
-// Fungsi untuk menghitung DMI/ADX
+// Fungsi untuk menghitung DMI/ADX (dari kode Java)
 const calcDMI = (highs, lows, closes, diLen, adxSmooth) => {
   const trValues = [];
   const plusDMValues = [];
@@ -197,16 +195,14 @@ const calcDMI = (highs, lows, closes, diLen, adxSmooth) => {
   };
 };
 
-// Fungsi untuk menghitung Kalman Filter
-const calcKalman = (data, gain) => {
-  let kalman = data[data.length - 1].close;
-  for (let i = data.length - 2; i >= 0; i--) {
-    kalman = kalman + gain * (data[i].close - kalman);
-  }
-  return kalman;
+// Fungsi untuk menghitung Kalman Filter (dari kode Java)
+const calcKalman = (data, gain, kalmanValues) => {
+  if (kalmanValues.length === 0) return data[data.length - 1].close;
+  const prevKalman = kalmanValues[kalmanValues.length - 1];
+  return prevKalman + gain * (data[0].close - prevKalman);
 };
 
-// Fungsi untuk menghitung ATR
+// Fungsi untuk menghitung ATR (dari kode Java)
 const calcATR = (data, length) => {
   let trSum = 0;
   for (let i = 0; i < length && i < data.length - 1; i++) {
@@ -250,7 +246,12 @@ const calculateIndicators = (dailyData, weeklyData, fourHourData) => {
   const { plusDI, minusDI, adx } = calcDMI(dailyData, dailyData, dailyData, 14, 14);
 
   // Kalman Filter (Daily)
-  const kalman = calcKalman(dailyData, 0.5);
+  const kalmanValues = [];
+  for (let i = dailyData.length - 1; i >= 0; i--) {
+    const kalman = calcKalman(dailyData.slice(i), 0.5, kalmanValues);
+    kalmanValues.push(kalman);
+  }
+  const kalman = kalmanValues[kalmanValues.length - 1];
 
   // ATR (Daily)
   const atrValue = calcATR(dailyData, 14);
@@ -297,35 +298,37 @@ const TradingDiary = () => {
   const [indicators, setIndicators] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const daily = await fetchHistoricalData(ticker, 'daily');
-      const weekly = await fetchHistoricalData(ticker, 'weekly');
-      let fourHour = await fetchHistoricalData(ticker, '4h');
-
-      if (fourHour.length === 0) {
-        fourHour = [];
-        for (let i = 0; i < daily.length; i += 2) {
-          const slice = daily.slice(i, i + 2);
-          if (slice.length > 0) {
-            const close = slice[0].close;
-            const high = Math.max(...slice.map(d => d.high));
-            const low = Math.min(...slice.map(d => d.low));
-            fourHour.push({ close, high, low });
-          }
-        }
+    const daily = simulateHistoricalData(ticker);
+    const weekly = [];
+    for (let i = 0; i < daily.length; i += 5) {
+      const slice = daily.slice(i, i + 5);
+      if (slice.length > 0) {
+        const close = slice[0].close;
+        const high = Math.max(...slice.map(d => d.high));
+        const low = Math.min(...slice.map(d => d.low));
+        weekly.push({ close, high, low });
       }
+    }
 
-      setDailyData(daily);
-      setWeeklyData(weekly);
-      setFourHourData(fourHour);
-
-      if (daily.length > 0 && weekly.length > 0 && fourHour.length > 0) {
-        const calculatedIndicators = calculateIndicators(daily, weekly, fourHour);
-        setIndicators(calculatedIndicators);
+    const fourHour = [];
+    for (let i = 0; i < daily.length; i += 2) {
+      const slice = daily.slice(i, i + 2);
+      if (slice.length > 0) {
+        const close = slice[0].close;
+        const high = Math.max(...slice.map(d => d.high));
+        const low = Math.min(...slice.map(d => d.low));
+        fourHour.push({ close, high, low });
       }
-    };
+    }
 
-    fetchData();
+    setDailyData(daily);
+    setWeeklyData(weekly);
+    setFourHourData(fourHour);
+
+    if (daily.length > 0 && weekly.length > 0 && fourHour.length > 0) {
+      const calculatedIndicators = calculateIndicators(daily, weekly, fourHour);
+      setIndicators(calculatedIndicators);
+    }
   }, [ticker]);
 
   useEffect(() => {
