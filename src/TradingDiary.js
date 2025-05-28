@@ -501,10 +501,13 @@ const TradingDiary = () => {
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt })
-          model: 'llama2-70b',
-          prompt: prompt,
-        }),
+        const response = await fetch('/api/groq', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ prompt }),
+});
       });
 
       console.log('Groq API response status:', response.status);
