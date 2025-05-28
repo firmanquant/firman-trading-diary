@@ -44,14 +44,20 @@ const SignalDashboard = ({
   return (
     <div className="dashboard">
       <h2>📊 Dashboard Mini</h2>
-      <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
-      <p><strong>Trend EMA:</strong> {trend}</p>
-      <p><strong>RSI:</strong> {rsi ? rsi.toFixed(2) : 'N/A'}</p>
-      <p><strong>MACD:</strong> {macdTrend}</p>
-      <p><strong>DI+/DI-:</strong> {diTrend}</p>
-      <p><strong>ADX:</strong> {adx ? adx.toFixed(2) : 'N/A'}</p>
-      <p><strong>Kalman Filter:</strong> {kalman ? kalman.toFixed(2) : 'N/A'}</p>
-      <p><strong>Harga Penutupan:</strong> {close ? close.toFixed(2) : 'N/A'}</p>
+      <div className="dashboard-row">
+        <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
+        <p><strong>Trend EMA:</strong> {trend}</p>
+        <p><strong>RSI:</strong> {rsi ? rsi.toFixed(2) : 'N/A'}</p>
+      </div>
+      <div className="dashboard-row">
+        <p><strong>MACD:</strong> {macdTrend}</p>
+        <p><strong>DI+/DI-:</strong> {diTrend}</p>
+        <p><strong>ADX:</strong> {adx ? adx.toFixed(2) : 'N/A'}</p>
+      </div>
+      <div className="dashboard-row">
+        <p><strong>Kalman Filter:</strong> {kalman ? kalman.toFixed(2) : 'N/A'}</p>
+        <p><strong>Harga Penutupan:</strong> {close ? close.toFixed(2) : 'N/A'}</p>
+      </div>
     </div>
   );
 };
