@@ -1,23 +1,23 @@
 /* Global reset dan font */
 body {
   margin: 0;
-  padding: 15px;
+  padding: 10px; /* Dikurangi dari 15px */
   background-color: #121212;
   color: #e0e0e0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 14px;
+  font-size: 13px; /* Dikurangi dari 14px */
 }
 
 /* Container utama */
 .container {
-  max-width: 1100px;
+  max-width: 1000px; /* Dikurangi dari 1100px */
   margin: auto;
 }
 
 /* Judul */
 h1 {
-  font-size: 1.5rem;
-  margin-bottom: 15px;
+  font-size: 1.3rem; /* Dikurangi dari 1.5rem */
+  margin-bottom: 10px; /* Dikurangi dari 15px */
   color: #90caf9;
   text-align: center;
 }
@@ -25,21 +25,21 @@ h1 {
 /* Form */
 .form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Dikurangi dari 130px */
+  gap: 8px; /* Dikurangi dari 10px */
+  margin-bottom: 10px; /* Dikurangi dari 15px */
   background-color: #1e1e1e;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 10px; /* Dikurangi dari 12px */
+  border-radius: 5px; /* Dikurangi dari 6px */
 }
 
 .form input {
-  padding: 8px;
+  padding: 6px; /* Dikurangi dari 8px */
   border: none;
-  border-radius: 4px;
+  border-radius: 3px; /* Dikurangi dari 4px */
   background-color: #2a2a2a;
   color: #e0e0e0;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Dikurangi dari 0.85rem */
   transition: border 0.3s;
 }
 
@@ -52,10 +52,10 @@ h1 {
   background-color: #2196f3;
   color: white;
   border: none;
-  padding: 8px;
-  border-radius: 4px;
+  padding: 6px; /* Dikurangi dari 8px */
+  border-radius: 3px; /* Dikurangi dari 4px */
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Dikurangi dari 0.85rem */
   transition: background-color 0.3s;
 }
 
@@ -65,42 +65,42 @@ h1 {
 
 /* Tombol "Lihat Hasil" */
 .toggle-table-btn {
-  background-color: #2196f3;
+  background-color: #4caf50; /* Diubah menjadi hijau uptrend */
   color: white;
   border: none;
-  padding: 8px;
-  border-radius: 4px;
+  padding: 6px; /* Dikurangi dari 8px */
+  border-radius: 3px; /* Dikurangi dari 4px */
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Dikurangi dari 0.85rem */
   transition: background-color 0.3s;
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Dikurangi dari 15px */
 }
 
 .toggle-table-btn:hover {
-  background-color: #1976d2;
+  background-color: #388e3c; /* Warna hijau lebih gelap saat hover */
 }
 
 /* Summary dan Dashboard container */
 .summary-dashboard-container {
   display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 10px; /* Dikurangi dari 15px */
+  margin-bottom: 10px; /* Dikurangi dari 15px */
   flex-wrap: wrap;
 }
 
 /* Summary box */
 .summary-card {
   background-color: #1e1e1e;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 10px; /* Dikurangi dari 12px */
+  border-radius: 5px; /* Dikurangi dari 6px */
   flex: 1;
-  min-width: 250px;
+  min-width: 220px; /* Dikurangi dari 250px */
 }
 
 .summary-card h2 {
   margin-top: 0;
   color: #81d4fa;
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* Dikurangi dari 1.2rem */
 }
 
 /* Tabel jurnal */
@@ -108,17 +108,23 @@ table {
   width: 100%;
   border-collapse: collapse;
   background-color: #1a1a1a;
-  border-radius: 6px;
+  border-radius: 5px; /* Dikurangi dari 6px */
   overflow: hidden;
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Dikurangi dari 15px */
+  opacity: 0; /* Awalnya tidak terlihat */
+  transition: opacity 0.3s ease; /* Animasi fade */
+}
+
+table.show {
+  opacity: 1; /* Tabel terlihat saat kelas "show" ditambahkan */
 }
 
 table th,
 table td {
-  padding: 8px;
+  padding: 6px; /* Dikurangi dari 8px */
   text-align: left;
   border-bottom: 1px solid #333;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Dikurangi dari 0.85rem */
 }
 
 table th {
@@ -137,10 +143,10 @@ table button {
   background-color: #f44336;
   color: white;
   border: none;
-  padding: 4px 8px;
-  border-radius: 3px;
+  padding: 3px 6px; /* Dikurangi dari 4px 8px */
+  border-radius: 2px; /* Dikurangi dari 3px */
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.75rem; /* Dikurangi dari 0.8rem */
   transition: background-color 0.3s;
 }
 
@@ -151,35 +157,35 @@ table button:hover {
 /* Dashboard mini */
 .dashboard {
   background-color: #1e1e1e;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 10px; /* Dikurangi dari 12px */
+  border-radius: 5px; /* Dikurangi dari 6px */
   flex: 2;
-  min-width: 250px;
+  min-width: 220px; /* Dikurangi dari 250px */
 }
 
 .dashboard h2 {
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem; /* Dikurangi dari 0.8rem */
   color: #81d4fa;
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* Dikurangi dari 1.2rem */
 }
 
 .dashboard-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 0.4rem;
+  gap: 6px; /* Dikurangi dari 8px */
+  margin-bottom: 0.3rem; /* Dikurangi dari 0.4rem */
   flex-wrap: wrap;
 }
 
 .dashboard-row p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Dikurangi dari 0.85rem */
   flex: 1;
-  min-width: 100px;
+  min-width: 90px; /* Dikurangi dari 100px */
 }
 
 /* Chart container */
 #tv_chart_container {
-  border-radius: 6px;
+  border-radius: 5px; /* Dikurangi dari 6px */
   overflow: hidden;
 }
