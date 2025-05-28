@@ -123,3 +123,106 @@ const TradingDiary = () => {
 };
 
 export default TradingDiary;
+
+import React from "react";
+
+// Fungsi reusable untuk generate sinyal
+export const generateSignals = ({
+  ema20,
+  ema50,
+  ema20Prev,
+  ema50Prev,
+  rsi,
+  macdLine,
+  signalLine,
+  plusDI,
+  minusDI,
+  adx,
+  kalman,
+  close
+}) => {
+  const emaCrossUp = ema20 > ema50 && ema20Prev <= ema50Prev;
+  const emaCrossDown = ema20 < ema50 && ema20Prev >= ema50Prev;
+
+  const buySignal =
+    emaCrossUp &&
+    rsi > 50 &&
+    macdLine > signalLine &&
+    plusDI > minusDI &&
+    adx > 20 &&
+    kalman !== null &&
+    close > kalman;
+
+  const sellSignal =
+    emaCrossDown &&
+    rsi < 50 &&
+    macdLine < signalLine &&
+    minusDI > plusDI &&
+    adx > 20 &&
+    kalman !== null &&
+    close < kalman;
+
+  return { buySignal, sellSignal };
+};
+
+// Komponen Dashboard
+const SignalDashboard = ({
+  ema20,
+  ema50,
+  rsi,
+  macdLine,
+  signalLine,
+  plusDI,
+  minusDI,
+  adx,
+  kalman,
+  close,
+  ema20Prev,
+  ema50Prev
+}) => {
+  const { buySignal, sellSignal } = generateSignals({
+    ema20,
+    ema50,
+    ema20Prev,
+    ema50Prev,
+    rsi,
+    macdLine,
+    signalLine,
+    plusDI,
+    minusDI,
+    adx,
+    kalman,
+    close
+  });
+
+  return (
+    <div className="dashboard">
+      <h2>📊 Dashboard Sinyal</h2>
+      <p><strong>Sinyal:</strong> {buySignal ? "BELI ✅" : sellSignal ? "JUAL ❌" : "TIDAK ADA"}</p>
+      <p><strong>Trend EMA:</strong> {ema20 > ema50 ? "🟢 Uptrend" : "🔴 Downtrend"}</p>
+      <p><strong>RSI:</strong> {rsi.toFixed(2)}</p>
+      <p><strong>MACD:</strong> {macdLine > signalLine ? "Bullish" : "Bearish"}</p>
+      <p><strong>DI+ vs DI-:</strong> {plusDI > minusDI ? "+DI Dominan" : "-DI Dominan"}</p>
+    </div>
+  );
+};
+
+export default SignalDashboard;
+
+import SignalDashboard from "./SignalDashboard";
+
+// ...dalam komponen return()
+<SignalDashboard
+  ema20={ema20}
+  ema50={ema50}
+  ema20Prev={ema20Prev}
+  ema50Prev={ema50Prev}
+  rsi={rsi}
+  macdLine={macdLine}
+  signalLine={signalLine}
+  plusDI={plusDI}
+  minusDI={minusDI}
+  adx={adx}
+  kalman={kalman}
+  close={currentClose}
+/>
