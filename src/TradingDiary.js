@@ -39,8 +39,8 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Fungsi untuk menghasilkan harga penutupan simulasi berdasarkan ticker
-const simulateStockPrice = (ticker) => {
+// Fungsi untuk menghasilkan data historis simulasi (50 bar terakhir)
+const simulateHistoricalData = (ticker, numBars = 50) => {
   const firstChar = ticker.charAt(0).toUpperCase();
   let basePrice, range;
 
@@ -61,63 +61,172 @@ const simulateStockPrice = (ticker) => {
   }
   const variation = (hash % 1000) - 500;
 
-  return {
-    close: basePrice + variation + (Math.random() - 0.5) * range,
-    closePrev: basePrice + variation + (Math.random() - 0.5) * range * 0.9,
-  };
+  const historicalData = [];
+  let prevClose = basePrice + variation;
+  for (let i = 0; i < numBars; i++) {
+    const close = prevClose + (Math.random() - 0.5) * range * 0.1;
+    const high = close + Math.random() * range * 0.05;
+    const low = close - Math.random() * range * 0.05;
+    historicalData.push({ close, high, low });
+    prevClose = close;
+  }
+
+  return historicalData.reverse(); // Bar terbaru di indeks 0
 };
 
-// Fungsi simulasi untuk menghitung indikator berdasarkan harga penutupan kemarin
-const simulateIndicators = (close, closePrev) => {
-  // Simulasi EMA (menggunakan pendekatan sederhana)
-  const alpha20 = 2 / (20 + 1);
-  const alpha50 = 2 / (50 + 1);
-  const ema20 = closePrev * (1 - alpha20) + close * alpha20;
-  const ema50 = closePrev * (1 - alpha50) + close * alpha50;
-  const ema20Prev = closePrev * (1 - alpha20) + (closePrev * 0.99) * alpha20;
-  const ema50Prev = closePrev * (1 - alpha50) + (closePrev * 0.99) * alpha50;
+// Fungsi untuk menghitung EMA
+const calcEMA = (prices, length) => {
+  const alpha = 2 / (length + 1);
+  let ema = prices[prices.length - 1].close; // Mulai dengan harga pertama
+  for (let i = prices.length - 2; i >= 0; i--) {
+    ema = prices[i].close * alpha + ema * (1 - alpha);
+  }
+  return ema;
+};
 
-  // Simulasi EMA untuk Trend 1W (menggunakan faktor perpanjangan timeframe mingguan)
-  const weeklyFactor = 0.8; // Simulasi timeframe mingguan dengan faktor smoothing
-  const ema20_1W = closePrev * (1 - alpha20 * weeklyFactor) + close * (alpha20 * weeklyFactor);
-  const ema50_1W = closePrev * (1 - alpha50 * weeklyFactor) + close * (alpha50 * weeklyFactor);
-
-  // Simulasi RSI
-  const change = close - closePrev;
-  const gain = change > 0 ? change : 0;
-  const loss = change < 0 ? -change : 0;
-  const avgGain = gain * 0.5;
-  const avgLoss = loss * 0.5;
+// Fungsi untuk menghitung RSI
+const calcRSI = (prices, length) => {
+  let gains = 0, losses = 0;
+  for (let i = 0; i < length && i < prices.length - 1; i++) {
+    const change = prices[i].close - prices[i + 1].close;
+    if (change > 0) gains += change;
+    else losses += -change;
+  }
+  const avgGain = gains / length;
+  const avgLoss = losses / length;
   const rs = avgGain / (avgLoss || 1);
-  const rsi = 100 - (100 / (1 + rs));
+  return 100 - (100 / (1 + rs));
+};
 
-  // Simulasi MACD
-  const alpha12 = 2 / (12 + 1);
-  const alpha26 = 2 / (26 + 1);
-  const alpha9 = 2 / (9 + 1);
-  const ema12 = closePrev * (1 - alpha12) + close * alpha12;
-  const ema26 = closePrev * (1 - alpha26) + close * alpha26;
-  const macdLine = ema12 - ema26;
-  const signalLine = macdLine * (1 - alpha9) + (macdLine * 0.9) * alpha9;
+// Fungsi untuk menghitung MACD
+const calcMACD = (prices, fastLength, slowLength, signalLength) => {
+  const emaFast = calcEMA(prices, fastLength);
+  const emaSlow = calcEMA(prices, slowLength);
+  const macdLine = emaFast - emaSlow;
 
-  // Simulasi MACD 4H (menggunakan faktor perpendekan timeframe 4 jam)
-  const fourHourFactor = 1.2; // Simulasi timeframe 4 jam dengan faktor smoothing
-  const ema12_4H = closePrev * (1 - alpha12 * fourHourFactor) + close * (alpha12 * fourHourFactor);
-  const ema26_4H = closePrev * (1 - alpha26 * fourHourFactor) + close * (alpha26 * fourHourFactor);
-  const macdLine_4H = ema12_4H - ema26_4H;
-  const signalLine_4H = macdLine_4H * (1 - alpha9 * fourHourFactor) + (macdLine_4H * 0.9) * (alpha9 * fourHourFactor);
+  // Simulasi signal line (EMA dari MACD Line)
+  const macdValues = [];
+  for (let i = prices.length - 1; i >= 0; i--) {
+    const emaFast_i = calcEMA(prices.slice(i), fastLength);
+    const emaSlow_i = calcEMA(prices.slice(i), slowLength);
+    macdValues.push(emaFast_i - emaSlow_i);
+  }
+  const signalLine = calcEMA(macdValues.map(val => ({ close: val })), signalLength);
 
-  // Simulasi DMI/ADX
-  const plusDI = Math.random() * 50;
-  const minusDI = Math.random() * 50;
-  const adx = Math.random() * 50;
+  return { macdLine, signalLine };
+};
 
-  // Simulasi Kalman Filter
-  const kalmanGain = 0.5;
-  const kalman = closePrev + kalmanGain * (close - closePrev);
+// Fungsi untuk menghitung DMI/ADX
+const calcDMI = (prices, diLength, adxSmooth) => {
+  let trSum = 0, plusDMSum = 0, minusDMSum = 0;
+  for (let i = 0; i < diLength && i < prices.length - 1; i++) {
+    const high = prices[i].high;
+    const low = prices[i].low;
+    const prevHigh = prices[i + 1].high;
+    const prevLow = prices[i + 1].low;
+    const prevClose = prices[i + 1].close;
 
-  // Simulasi ATR (sebagai persentase dari harga penutupan)
-  const atrValue = Math.abs(close - closePrev) * 1.5; // Simulasi sederhana ATR
+    const tr = Math.max(
+      high - low,
+      Math.abs(high - prevClose),
+      Math.abs(low - prevClose)
+    );
+    const plusDM = high - prevHigh > prevLow - low ? Math.max(high - prevHigh, 0) : 0;
+    const minusDM = prevLow - low > high - prevHigh ? Math.max(prevLow - low, 0) : 0;
+
+    trSum += tr;
+    plusDMSum += plusDM;
+    minusDMSum += minusDM;
+  }
+
+  const plusDI = (plusDMSum / trSum) * 100;
+  const minusDI = (minusDMSum / trSum) * 100;
+
+  // Simulasi ADX
+  const dx = Math.abs(plusDI - minusDI) / (plusDI + minusDI || 1) * 100;
+  const adxValues = Array(adxSmooth).fill(dx); // Simulasi sederhana
+  const adx = calcEMA(adxValues.map(val => ({ close: val })), adxSmooth);
+
+  return { plusDI, minusDI, adx };
+};
+
+// Fungsi untuk menghitung Kalman Filter
+const calcKalman = (prices, gain) => {
+  let kalman = prices[prices.length - 1].close;
+  for (let i = prices.length - 2; i >= 0; i--) {
+    kalman = kalman + gain * (prices[i].close - kalman);
+  }
+  return kalman;
+};
+
+// Fungsi untuk menghitung ATR
+const calcATR = (prices, length) => {
+  let trSum = 0;
+  for (let i = 0; i < length && i < prices.length - 1; i++) {
+    const high = prices[i].high;
+    const low = prices[i].low;
+    const prevClose = prices[i + 1].close;
+    const tr = Math.max(
+      high - low,
+      Math.abs(high - prevClose),
+      Math.abs(low - prevClose)
+    );
+    trSum += tr;
+  }
+  return trSum / length;
+};
+
+// Fungsi untuk menghitung indikator berdasarkan data historis
+const simulateIndicators = (historicalData) => {
+  const close = historicalData[0].close;
+
+  // EMA20 dan EMA50
+  const ema20 = calcEMA(historicalData, 20);
+  const ema50 = calcEMA(historicalData, 50);
+  const ema20Prev = calcEMA(historicalData.slice(1), 20);
+  const ema50Prev = calcEMA(historicalData.slice(1), 50);
+
+  // Trend 1W (simulasi dengan mengelompokkan data harian ke mingguan)
+  const weeklyData = [];
+  for (let i = 0; i < historicalData.length; i += 5) {
+    const weekSlice = historicalData.slice(i, i + 5);
+    if (weekSlice.length > 0) {
+      const close = weekSlice[0].close;
+      const high = Math.max(...weekSlice.map(d => d.high));
+      const low = Math.min(...weekSlice.map(d => d.low));
+      weeklyData.push({ close, high, low });
+    }
+  }
+  const ema20_1W = calcEMA(weeklyData, 20);
+  const ema50_1W = calcEMA(weeklyData, 50);
+
+  // RSI
+  const rsi = calcRSI(historicalData, 14);
+
+  // MACD
+  const { macdLine, signalLine } = calcMACD(historicalData, 12, 26, 9);
+
+  // MACD 4H (simulasi dengan mengelompokkan data harian ke 4 jam)
+  const fourHourData = [];
+  for (let i = 0; i < historicalData.length; i += 2) {
+    const fourHourSlice = historicalData.slice(i, i + 2);
+    if (fourHourSlice.length > 0) {
+      const close = fourHourSlice[0].close;
+      const high = Math.max(...fourHourSlice.map(d => d.high));
+      const low = Math.min(...fourHourSlice.map(d => d.low));
+      fourHourData.push({ close, high, low });
+    }
+  }
+  const { macdLine: macdLine_4H, signalLine: signalLine_4H } = calcMACD(fourHourData, 12, 26, 9);
+
+  // DMI/ADX
+  const { plusDI, minusDI, adx } = calcDMI(historicalData, 14, 14);
+
+  // Kalman Filter
+  const kalman = calcKalman(historicalData, 0.5);
+
+  // ATR
+  const atrValue = calcATR(historicalData, 14);
   const atrPct = (atrValue / close) * 100;
 
   return {
@@ -135,8 +244,8 @@ const simulateIndicators = (close, closePrev) => {
     plusDI,
     minusDI,
     adx,
-    kalman,
     atrPct,
+    kalman,
     close,
   };
 };
@@ -155,18 +264,18 @@ const TradingDiary = () => {
     emotion: ''
   });
   const [ticker, setTicker] = useState('BBCA');
-  const [prices, setPrices] = useState(() => simulateStockPrice('BBCA'));
+  const [historicalData, setHistoricalData] = useState(() => simulateHistoricalData('BBCA'));
 
   useEffect(() => {
-    const newPrices = simulateStockPrice(ticker);
-    setPrices(newPrices);
+    const newHistoricalData = simulateHistoricalData(ticker);
+    setHistoricalData(newHistoricalData);
   }, [ticker]);
 
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  const indicators = simulateIndicators(prices.close, prices.closePrev);
+  const indicators = simulateIndicators(historicalData);
 
   const handleChange = e => {
     const { name, value } = e.target;
