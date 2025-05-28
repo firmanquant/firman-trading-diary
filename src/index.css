@@ -183,3 +183,24 @@ table button:hover {
   border-radius: 5px;
   overflow: hidden;
 }
+
+/* Gaya untuk analisis Groq */
+.groq-analysis {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #263238;
+  border-radius: 5px;
+  color: #b2ebf2;
+}
+
+.groq-analysis strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #81d4fa;
+}
+
+.groq-analysis p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
