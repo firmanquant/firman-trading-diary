@@ -39,57 +39,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Fungsi untuk menghasilkan data historis simulasi dengan seed
-const simulateHistoricalData = (ticker, numBars = 50) => {
-  // Fungsi untuk menghasilkan angka acak yang konsisten berdasarkan seed
-  const mulberry32 = (seed) => {
-    let t = seed + 0x6D2B79F5;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-
-  let seed = 0;
-  for (let i = 0; i < ticker.length; i++) {
-    seed = (seed * 31 + ticker.charCodeAt(i)) & 0xFFFFFFFF;
-  }
-
-  const firstChar = ticker.charAt(0).toUpperCase();
-  let basePrice, range;
-
-  if (firstChar >= 'A' && firstChar <= 'E') {
-    basePrice = 8000;
-    range = 1000;
-  } else if (firstChar >= 'F' && firstChar <= 'J') {
-    basePrice = 4000;
-    range = 500;
-  } else {
-    basePrice = 500;
-    range = 100;
-  }
-
-  let hash = 0;
-  for (let i = 0; i < ticker.length; i++) {
-    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const variation = (hash % 1000) - 500;
-
-  const historicalData = [];
-  let prevClose = basePrice + variation;
-  for (let i = 0; i < numBars; i++) {
-    const random = mulberry32(seed + i);
-    const close = prevClose + (random - 0.5) * range * 0.1;
-    const high = close + random * range * 0.05;
-    const low = close - random * range * 0.05;
-    const volume = 1000000 + random * 500000; // Simulasi volume
-    historicalData.push({ close, high, low, volume });
-    prevClose = close;
-  }
-
-  return historicalData.reverse(); // Bar terbaru di indeks 0
-};
-
-// Kelas FirmanQuantStrategy
+// Kelas FirmanQuantStrategy (disalin dari FirmanQuantStrategy.js)
 class FirmanQuantStrategy {
   constructor(params) {
     // ===== INPUT PARAMETERS =====
@@ -199,8 +149,10 @@ class FirmanQuantStrategy {
     if (data.length < length) return NaN;
     const multiplier = 2.0 / (length + 1);
 
+    // Hitung SMA sebagai nilai awal EMA
     let ema = data.slice(0, length).reduce((sum, val) => sum + val, 0) / length;
 
+    // Hitung EMA untuk titik data selanjutnya
     for (let i = length; i < data.length; i++) {
       ema = (data[i] - ema) * multiplier + ema;
     }
@@ -224,11 +176,12 @@ class FirmanQuantStrategy {
     const plusDMValues = [];
     const minusDMValues = [];
 
-    // 1. Calculate True Range and Directional Movement
+    // 1. Hitung True Range dan Directional Movement
     for (let i = 1; i < highs.length; i++) {
       const tr = Math.max(
         highs[i] - lows[i],
-        Math.max(Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]))
+        Math.abs(highs[i] - closes[i - 1]),
+        Math.abs(lows[i] - closes[i - 1])
       );
       trValues.push(tr);
 
@@ -242,12 +195,12 @@ class FirmanQuantStrategy {
       minusDMValues.push(minusDM);
     }
 
-    // 2. Smooth the values (Wilder's smoothing)
+    // 2. Smoothing menggunakan Wilder's method
     const smoothedTR = this.wilderSmoothing(trValues, diLen);
     const smoothedPlusDM = this.wilderSmoothing(plusDMValues, diLen);
     const smoothedMinusDM = this.wilderSmoothing(minusDMValues, diLen);
 
-    // 3. Calculate Directional Indicators
+    // 3. Hitung Directional Indicators
     const plusDI = [];
     const minusDI = [];
     for (let i = 0; i < smoothedTR.length; i++) {
@@ -255,12 +208,13 @@ class FirmanQuantStrategy {
       minusDI.push(100 * smoothedMinusDM[i] / smoothedTR[i]);
     }
 
-    // 4. Calculate ADX
+    // 4. Hitung ADX
     const dxValues = [];
     for (let i = 0; i < plusDI.length; i++) {
       const diDiff = Math.abs(plusDI[i] - minusDI[i]);
       const diSum = plusDI[i] + minusDI[i];
-      dxValues.push(100 * (diDiff / (diSum === 0 ? 1 : diSum)));
+      // Hindari pembagian dengan nol
+      dxValues.push(diSum > 0 ? 100 * (diDiff / diSum) : 0);
     }
 
     const adx = this.wilderSmoothing(dxValues, adxSmooth);
@@ -293,6 +247,7 @@ class FirmanQuantStrategy {
     const slowEMA = this.calcEMA(closes, slowLen);
     const macdLine = fastEMA - slowEMA;
 
+    // Gabungkan nilai historis dengan nilai terbaru
     const macdLineHistory = [...this.macdLineValues, macdLine];
     const signalLine = this.calcEMA(macdLineHistory, signalLen);
 
@@ -309,7 +264,7 @@ class FirmanQuantStrategy {
     let avgGain = 0;
     let avgLoss = 0;
 
-    // Initial calculation
+    // Hitungan awal
     for (let i = 1; i <= length; i++) {
       const change = closes[i] - closes[i - 1];
       if (change > 0) avgGain += change;
@@ -319,26 +274,29 @@ class FirmanQuantStrategy {
     avgGain /= length;
     avgLoss /= length;
 
-    // Subsequent calculations
+    // Hitungan berkelanjutan
     for (let i = length + 1; i < closes.length; i++) {
       const change = closes[i] - closes[i - 1];
-      const gain = Math.max(0, change);
-      const loss = Math.max(0, -change);
+      const gain = change > 0 ? change : 0;
+      const loss = change < 0 ? -change : 0;
 
       avgGain = (avgGain * (length - 1) + gain) / length;
       avgLoss = (avgLoss * (length - 1) + loss) / length;
     }
 
-    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    // Hindari pembagian dengan nol
+    const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
     return 100 - (100 / (1 + rs));
   }
 
-  // ===== SIGNAL GENERATION =====
+  // ===== GENERASI SINYAL =====
   generateSignals() {
     const idx = this.closes.length - 1;
 
+    // Pastikan ada cukup data
     if (idx < 1) return;
 
+    // Crossover EMA
     const emaCrossUp =
       this.ema20Values[idx] > this.ema50Values[idx] &&
       this.ema20Values[idx - 1] <= this.ema50Values[idx - 1];
@@ -347,6 +305,7 @@ class FirmanQuantStrategy {
       this.ema20Values[idx] < this.ema50Values[idx] &&
       this.ema20Values[idx - 1] >= this.ema50Values[idx - 1];
 
+    // Sinyal beli
     const buySignal =
       emaCrossUp &&
       this.rsiValues[idx] > 50 &&
@@ -356,6 +315,7 @@ class FirmanQuantStrategy {
       !isNaN(this.kalmanValues[idx]) &&
       this.closes[idx] > this.kalmanValues[idx];
 
+    // Sinyal jual
     const sellSignal =
       emaCrossDown &&
       this.rsiValues[idx] < 50 &&
@@ -365,7 +325,7 @@ class FirmanQuantStrategy {
       !isNaN(this.kalmanValues[idx]) &&
       this.closes[idx] < this.kalmanValues[idx];
 
-    // Execute trading logic
+    // Eksekusi trading
     if (buySignal) {
       this.openPositions.push({
         entryTime: Date.now(),
@@ -385,16 +345,15 @@ class FirmanQuantStrategy {
     }
   }
 
-  // ===== PERFORMANCE TRACKING =====
+  // ===== PELACAKAN KINERJA =====
   updatePerformance() {
-    // Implementasi pembaruan metrik kinerja
+    // Diimplementasikan sesuai kebutuhan
   }
 
   getPerformanceSummary() {
     const totalProfit = this.tradeRecords.reduce((sum, trade) => sum + trade.profit, 0);
     const winCount = this.tradeRecords.filter(t => t.profit > 0).length;
-    const winRate =
-      this.tradeRecords.length > 0 ? (winCount / this.tradeRecords.length) * 100 : 0;
+    const winRate = this.tradeRecords.length > 0 ? (winCount / this.tradeRecords.length) * 100 : 0;
 
     return {
       totalTrades: this.tradeRecords.length,
@@ -455,6 +414,56 @@ class FirmanQuantStrategy {
     };
   }
 }
+
+// Fungsi untuk menghasilkan data historis simulasi dengan seed
+const simulateHistoricalData = (ticker, numBars = 50) => {
+  // Fungsi untuk menghasilkan angka acak yang konsisten berdasarkan seed
+  const mulberry32 = (seed) => {
+    let t = seed + 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  let seed = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    seed = (seed * 31 + ticker.charCodeAt(i)) & 0xFFFFFFFF;
+  }
+
+  const firstChar = ticker.charAt(0).toUpperCase();
+  let basePrice, range;
+
+  if (firstChar >= 'A' && firstChar <= 'E') {
+    basePrice = 8000;
+    range = 1000;
+  } else if (firstChar >= 'F' && firstChar <= 'J') {
+    basePrice = 4000;
+    range = 500;
+  } else {
+    basePrice = 500;
+    range = 100;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const variation = (hash % 1000) - 500;
+
+  const historicalData = [];
+  let prevClose = basePrice + variation;
+  for (let i = 0; i < numBars; i++) {
+    const random = mulberry32(seed + i);
+    const close = prevClose + (random - 0.5) * range * 0.1;
+    const high = close + random * range * 0.05;
+    const low = close - random * range * 0.05;
+    const volume = 1000000 + random * 500000; // Simulasi volume
+    historicalData.push({ close, high, low, volume });
+    prevClose = close;
+  }
+
+  return historicalData.reverse(); // Bar terbaru di indeks 0
+};
 
 // Fungsi untuk menghitung ATR
 const calcATR = (data, length) => {
