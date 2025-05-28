@@ -39,7 +39,57 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Kelas FirmanQuantStrategy (dari kode yang diberikan)
+// Fungsi untuk menghasilkan data historis simulasi dengan seed
+const simulateHistoricalData = (ticker, numBars = 50) => {
+  // Fungsi untuk menghasilkan angka acak yang konsisten berdasarkan seed
+  const mulberry32 = (seed) => {
+    let t = seed + 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  let seed = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    seed = (seed * 31 + ticker.charCodeAt(i)) & 0xFFFFFFFF;
+  }
+
+  const firstChar = ticker.charAt(0).toUpperCase();
+  let basePrice, range;
+
+  if (firstChar >= 'A' && firstChar <= 'E') {
+    basePrice = 8000;
+    range = 1000;
+  } else if (firstChar >= 'F' && firstChar <= 'J') {
+    basePrice = 4000;
+    range = 500;
+  } else {
+    basePrice = 500;
+    range = 100;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const variation = (hash % 1000) - 500;
+
+  const historicalData = [];
+  let prevClose = basePrice + variation;
+  for (let i = 0; i < numBars; i++) {
+    const random = mulberry32(seed + i);
+    const close = prevClose + (random - 0.5) * range * 0.1;
+    const high = close + random * range * 0.05;
+    const low = close - random * range * 0.05;
+    const volume = 1000000 + random * 500000; // Simulasi volume
+    historicalData.push({ close, high, low, volume });
+    prevClose = close;
+  }
+
+  return historicalData.reverse(); // Bar terbaru di indeks 0
+};
+
+// Kelas FirmanQuantStrategy
 class FirmanQuantStrategy {
   constructor(params) {
     // ===== INPUT PARAMETERS =====
@@ -79,6 +129,26 @@ class FirmanQuantStrategy {
     this.rsiValues = [];
 
     // ===== TRADE RECORDS =====
+    this.tradeRecords = [];
+    this.openPositions = [];
+  }
+
+  resetData() {
+    this.closes = [];
+    this.volumes = [];
+    this.highs = [];
+    this.lows = [];
+    this.ema20Values = [];
+    this.ema50Values = [];
+    this.sma20Values = [];
+    this.sma50Values = [];
+    this.kalmanValues = [];
+    this.plusDIValues = [];
+    this.minusDIValues = [];
+    this.adxValues = [];
+    this.macdLineValues = [];
+    this.signalLineValues = [];
+    this.rsiValues = [];
     this.tradeRecords = [];
     this.openPositions = [];
   }
@@ -158,10 +228,7 @@ class FirmanQuantStrategy {
     for (let i = 1; i < highs.length; i++) {
       const tr = Math.max(
         highs[i] - lows[i],
-        Math.max(
-          Math.abs(highs[i] - closes[i - 1]),
-          Math.abs(lows[i] - closes[i - 1])
-        )
+        Math.max(Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]))
       );
       trValues.push(tr);
 
@@ -356,43 +423,38 @@ class FirmanQuantStrategy {
       close: this.closes[idx],
     };
   }
+
+  // Fungsi untuk menghitung indikator pada data tertentu (untuk timeframe berbeda)
+  calcEMAForData(data, length) {
+    if (data.length < length) return NaN;
+    const multiplier = 2.0 / (length + 1);
+    let ema = data.slice(0, length).reduce((sum, val) => sum + val, 0) / length;
+    for (let i = length; i < data.length; i++) {
+      ema = (data[i] - ema) * multiplier + ema;
+    }
+    return ema;
+  }
+
+  calcMACDForData(data, fastLen, slowLen, signalLen) {
+    const fastEMA = this.calcEMAForData(data, fastLen);
+    const slowEMA = this.calcEMAForData(data, slowLen);
+    const macdLine = fastEMA - slowEMA;
+
+    const macdLineHistory = [];
+    for (let i = data.length - 1; i >= 0; i--) {
+      const emaFast = this.calcEMAForData(data.slice(i), fastLen);
+      const emaSlow = this.calcEMAForData(data.slice(i), slowLen);
+      macdLineHistory.push(emaFast - emaSlow);
+    }
+    const signalLine = this.calcEMAForData(macdLineHistory, signalLen);
+
+    return {
+      macdLine,
+      signalLine,
+      histogram: macdLine - signalLine,
+    };
+  }
 }
-
-// Fungsi untuk menghasilkan data historis simulasi (50 bar terakhir)
-const simulateHistoricalData = (ticker, numBars = 50) => {
-  const firstChar = ticker.charAt(0).toUpperCase();
-  let basePrice, range;
-
-  if (firstChar >= 'A' && firstChar <= 'E') {
-    basePrice = 8000;
-    range = 1000;
-  } else if (firstChar >= 'F' && firstChar <= 'J') {
-    basePrice = 4000;
-    range = 500;
-  } else {
-    basePrice = 500;
-    range = 100;
-  }
-
-  let hash = 0;
-  for (let i = 0; i < ticker.length; i++) {
-    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const variation = (hash % 1000) - 500;
-
-  const historicalData = [];
-  let prevClose = basePrice + variation;
-  for (let i = 0; i < numBars; i++) {
-    const close = prevClose + (Math.random() - 0.5) * range * 0.1;
-    const high = close + Math.random() * range * 0.05;
-    const low = close - Math.random() * range * 0.05;
-    const volume = 1000000 + Math.random() * 500000; // Simulasi volume
-    historicalData.push({ close, high, low, volume });
-    prevClose = close;
-  }
-
-  return historicalData.reverse(); // Bar terbaru di indeks 0
-};
 
 // Fungsi untuk menghitung ATR
 const calcATR = (data, length) => {
@@ -481,21 +543,35 @@ const TradingDiary = () => {
     setWeeklyData(weekly);
     setFourHourData(fourHour);
 
-    // Proses data menggunakan strategi
+    // Reset data strategi dan proses data baru
+    newStrategy.resetData();
     daily.forEach(data => newStrategy.processNewData(data));
 
     // Hitung indikator tambahan (ATR, Trend 1W, 4H MACD)
     const latestIndicators = newStrategy.getLatestIndicators();
     const atrValue = calcATR(daily, 14);
     const atrPct = (atrValue / latestIndicators.close) * 100;
-    const ema20_1W = calcEMA(weekly, 20);
-    const ema50_1W = calcEMA(weekly, 50);
-    const { macdLine: macdLine_4H, signalLine: signalLine_4H } = newStrategy.calcMACD(
+    const ema20_1W = newStrategy.calcEMAForData(weekly.map(d => d.close), 20);
+    const ema50_1W = newStrategy.calcEMAForData(weekly.map(d => d.close), 50);
+    const { macdLine: macdLine_4H, signalLine: signalLine_4H } = newStrategy.calcMACDForData(
       fourHour.map(d => d.close),
       12,
       26,
       9
     );
+
+    // Logging untuk debugging
+    console.log('Daily Data:', daily.slice(0, 5));
+    console.log('Weekly Data:', weekly.slice(0, 5));
+    console.log('Four Hour Data:', fourHour.slice(0, 5));
+    console.log('Latest Indicators:', {
+      ...latestIndicators,
+      ema20_1W,
+      ema50_1W,
+      macdLine_4H,
+      signalLine_4H,
+      atrPct,
+    });
 
     setIndicators({
       ...latestIndicators,
