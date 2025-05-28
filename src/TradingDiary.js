@@ -41,18 +41,17 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
 
 // Fungsi simulasi untuk menghitung indikator (karena belum ada API)
 const simulateIndicators = (closePrice) => {
-  // Simulasi sederhana berdasarkan harga penutupan
-  const ema20 = closePrice * 1.02; // Simulasi EMA20 (2% lebih tinggi)
-  const ema50 = closePrice * 1.01; // Simulasi EMA50 (1% lebih tinggi)
+  const ema20 = closePrice * 1.02;
+  const ema50 = closePrice * 1.01;
   const ema20Prev = closePrice * 1.015;
   const ema50Prev = closePrice * 1.005;
-  const rsi = Math.random() * 100; // Simulasi RSI (0-100)
-  const macdLine = (Math.random() - 0.5) * 2; // Simulasi MACD (-1 hingga 1)
+  const rsi = Math.random() * 100;
+  const macdLine = (Math.random() - 0.5) * 2;
   const signalLine = macdLine * 0.9;
-  const plusDI = Math.random() * 50; // Simulasi +DI (0-50)
-  const minusDI = Math.random() * 50; // Simulasi -DI (0-50)
-  const adx = Math.random() * 50; // Simulasi ADX (0-50)
-  const kalman = closePrice * 0.99; // Simulasi Kalman (1% lebih rendah)
+  const plusDI = Math.random() * 50;
+  const minusDI = Math.random() * 50;
+  const adx = Math.random() * 50;
+  const kalman = closePrice * 0.99;
 
   return {
     ema20,
@@ -71,7 +70,6 @@ const simulateIndicators = (closePrice) => {
 
 const TradingDiary = () => {
   const [entries, setEntries] = useState(() => {
-    // Muat data dari localStorage saat aplikasi dimuat
     const savedEntries = localStorage.getItem('tradingEntries');
     return savedEntries ? JSON.parse(savedEntries) : [];
   });
@@ -83,18 +81,16 @@ const TradingDiary = () => {
     reason: '',
     emotion: ''
   });
-  const [currentClose, setCurrentClose] = useState(9450); // Harga penutupan awal (dari screenshot)
-  const [ticker, setTicker] = useState('BBCA'); // Ticker awal
+  const [currentClose, setCurrentClose] = useState(9450);
+  const [ticker, setTicker] = useState('BBCA');
 
-  // Simpan entries ke localStorage setiap kali entries berubah
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  // Simulasi harga penutupan berubah setiap 10 detik
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentClose(prev => prev + (Math.random() - 0.5) * 100); // Fluktuasi ±50
+      setCurrentClose(prev => prev + (Math.random() - 0.5) * 100);
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -161,11 +157,28 @@ const TradingDiary = () => {
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-      <div className="summary-card">
-        <h2>📊 Ringkasan Performa</h2>
-        <p>Total Trade: {totalTrades}</p>
-        <p>Win Rate: {totalTrades ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
-        <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
+      <div className="summary-dashboard-container">
+        <div className="summary-card">
+          <h2>📊 Ringkasan Performa</h2>
+          <p>Total Trade: {totalTrades}</p>
+          <p>Win Rate: {totalTrades ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
+          <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
+        </div>
+
+        <SignalDashboard
+          ema20={indicators.ema20}
+          ema50={indicators.ema50}
+          ema20Prev={indicators.ema20Prev}
+          ema50Prev={indicators.ema50Prev}
+          rsi={indicators.rsi}
+          macdLine={indicators.macdLine}
+          signalLine={indicators.signalLine}
+          plusDI={indicators.plusDI}
+          minusDI={indicators.minusDI}
+          adx={indicators.adx}
+          kalman={indicators.kalman}
+          close={currentClose}
+        />
       </div>
 
       {entries.length > 0 && (
@@ -204,21 +217,6 @@ const TradingDiary = () => {
       )}
 
       <TVChart symbol={`IDX:${ticker}`} />
-
-      <SignalDashboard
-        ema20={indicators.ema20}
-        ema50={indicators.ema50}
-        ema20Prev={indicators.ema20Prev}
-        ema50Prev={indicators.ema50Prev}
-        rsi={indicators.rsi}
-        macdLine={indicators.macdLine}
-        signalLine={indicators.signalLine}
-        plusDI={indicators.plusDI}
-        minusDI={indicators.minusDI}
-        adx={indicators.adx}
-        kalman={indicators.kalman}
-        close={currentClose}
-      />
     </div>
   );
 };
