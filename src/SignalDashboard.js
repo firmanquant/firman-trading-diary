@@ -38,18 +38,20 @@ const SignalDashboard = ({
 
   const trend =
     ema20 > ema50 ? '🔼 Uptrend' : ema20 < ema50 ? '🔽 Downtrend' : 'Sideways';
-  const macdTrend = macdLine > signalLine ? 'Bullish' : 'Bearish';
-  const diTrend = plusDI > minusDI ? '+DI Dominan' : '-DI Dominan';
+  const macdTrend = macdLine > signalLine ? 'Bullish 📈' : 'Bearish 📉';
+  const diTrend = plusDI > minusDI ? '+DI Dominan 📈' : '-DI Dominan 📉';
 
   return (
     <div className="dashboard">
       <h2>📊 Dashboard Mini</h2>
       <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
       <p><strong>Trend EMA:</strong> {trend}</p>
-      <p><strong>RSI:</strong> {rsi?.toFixed(2)}</p>
+      <p><strong>RSI:</strong> {rsi ? rsi.toFixed(2) : 'N/A'}</p>
       <p><strong>MACD:</strong> {macdTrend}</p>
       <p><strong>DI+/DI-:</strong> {diTrend}</p>
-      <p><strong>ADX:</strong> {adx?.toFixed(2)}</p>
+      <p><strong>ADX:</strong> {adx ? adx.toFixed(2) : 'N/A'}</p>
+      <p><strong>Kalman Filter:</strong> {kalman ? kalman.toFixed(2) : 'N/A'}</p>
+      <p><strong>Harga Penutupan:</strong> {close ? close.toFixed(2) : 'N/A'}</p>
     </div>
   );
 };
