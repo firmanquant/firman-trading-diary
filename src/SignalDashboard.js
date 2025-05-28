@@ -14,7 +14,7 @@ const SignalDashboard = ({
   kalman,
   close
 }) => {
-  // ===== LOGIC SINYAL =====
+  // Logika sinyal sesuai PineScript
   const emaCrossUp = ema20Prev < ema50Prev && ema20 > ema50;
   const emaCrossDown = ema20Prev > ema50Prev && ema20 < ema50;
 
@@ -36,8 +36,7 @@ const SignalDashboard = ({
     kalman !== null &&
     close < kalman;
 
-  const trend =
-    ema20 > ema50 ? '🔼 Uptrend' : ema20 < ema50 ? '🔽 Downtrend' : 'Sideways';
+  const trend = ema20 > ema50 ? '🟢 Uptrend' : ema20 < ema50 ? '🔴 Downtrend' : 'Sideways';
   const macdTrend = macdLine > signalLine ? 'Bullish 📈' : 'Bearish 📉';
   const diTrend = plusDI > minusDI ? '+DI Dominan 📈' : '-DI Dominan 📉';
 
@@ -53,10 +52,6 @@ const SignalDashboard = ({
         <p><strong>MACD:</strong> {macdTrend}</p>
         <p><strong>DI+/DI-:</strong> {diTrend}</p>
         <p><strong>ADX:</strong> {adx ? adx.toFixed(2) : 'N/A'}</p>
-      </div>
-      <div className="dashboard-row">
-        <p><strong>Kalman Filter:</strong> {kalman ? kalman.toFixed(2) : 'N/A'}</p>
-        <p><strong>Harga Penutupan:</strong> {close ? close.toFixed(2) : 'N/A'}</p>
       </div>
     </div>
   );
