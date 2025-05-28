@@ -2,32 +2,34 @@ import React, { useState, useEffect } from 'react';
 
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
   useEffect(() => {
-  const container = document.getElementById("tv_chart_container");
-  if (!container) return;
+    const container = document.getElementById("tv_chart_container");
+    if (!container) return;
 
-  // Clear container
-  container.innerHTML = "";
+    container.innerHTML = ""; // 🔁 Reset chart
 
-  const script = document.createElement("script");
-  script.src = "https://s3.tradingview.com/tv.js";
-  script.async = true;
-  script.onload = () => {
-    if (window.TradingView) {
-      new window.TradingView.widget({
-        container_id: "tv_chart_container",
-        symbol,
-        interval: "D",
-        timezone: "Asia/Jakarta",
-        theme: "dark",
-        style: "1",
-        locale: "id",
-        autosize: true,
-      });
-    }
-  };
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/tv.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.TradingView) {
+        new window.TradingView.widget({
+          container_id: "tv_chart_container",
+          symbol,
+          interval: "D",
+          timezone: "Asia/Jakarta",
+          theme: "dark",
+          style: "1",
+          locale: "id",
+          autosize: true,
+        });
+      }
+    };
 
-  container.appendChild(script);
-}, [symbol]); // <=== pastikan symbol jadi dependency
+    container.appendChild(script);
+  }, [symbol]); // ✅ Depend on ticker changes
+
+  return <div id="tv_chart_container" style={{ height: "500px", marginTop: "2rem" }} />;
+};
 
     container.innerHTML = ""; // Clear chart before reload
     container.appendChild(script);
