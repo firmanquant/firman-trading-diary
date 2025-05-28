@@ -4,82 +4,94 @@ body {
   padding: 20px;
   background-color: #121212;
   color: #e0e0e0;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Container utama */
 .container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: auto;
 }
 
 /* Judul */
 h1 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   margin-bottom: 20px;
   color: #90caf9;
+  text-align: center;
 }
 
-/* Form grid */
-.form-grid {
+/* Form */
+.form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
+  background-color: #1e1e1e;
+  padding: 15px;
+  border-radius: 8px;
 }
 
-input {
-  padding: 8px;
+.form input {
+  padding: 10px;
   border: none;
   border-radius: 6px;
-  background-color: #1e1e1e;
-  color: #fff;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  transition: border 0.3s;
 }
 
-button {
+.form input:focus {
+  outline: none;
+  border: 1px solid #2196f3;
+}
+
+.form button {
   background-color: #2196f3;
   color: white;
   border: none;
-  padding: 8px 12px;
+  padding: 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s;
 }
 
-button:hover {
+.form button:hover {
   background-color: #1976d2;
 }
 
 /* Summary box */
-.summary {
+.summary-card {
   background-color: #1e1e1e;
   padding: 15px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 20px;
 }
 
-.summary h2 {
+.summary-card h2 {
   margin-top: 0;
   color: #81d4fa;
+  font-size: 1.5rem;
 }
 
 /* Tabel jurnal */
-.diary-table {
+table {
   width: 100%;
   border-collapse: collapse;
   background-color: #1a1a1a;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
-.diary-table th,
-.diary-table td {
-  padding: 10px;
+table th,
+table td {
+  padding: 12px;
   text-align: left;
   border-bottom: 1px solid #333;
 }
 
-.diary-table th {
+table th {
   background-color: #263238;
   color: #b2ebf2;
   position: sticky;
@@ -87,24 +99,45 @@ button:hover {
   z-index: 1;
 }
 
-.diary-table tr:hover {
+table tr:hover {
   background-color: #2a2a2a;
 }
 
+table button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+table button:hover {
+  background-color: #d32f2f;
+}
+
+/* Dashboard mini */
 .dashboard {
-  background-color: #f4f7fb;
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin-top: 2rem;
+  background-color: #1e1e1e;
+  padding: 15px;
   border-radius: 8px;
+  margin-top: 20px;
 }
 
 .dashboard h2 {
   margin-bottom: 1rem;
-  color: #333;
+  color: #81d4fa;
+  font-size: 1.5rem;
 }
 
 .dashboard p {
-  margin: 0.4rem 0;
-  font-size: 0.95rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+/* Chart container */
+#tv_chart_container {
+  border-radius: 8px;
+  overflow: hidden;
 }
