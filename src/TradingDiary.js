@@ -68,6 +68,19 @@ const TradingDiary = () => {
   const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
   const totalGainLoss = entries.reduce((sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0), 0);
 
+const ema20 = 10;
+const ema50 = 8;
+const ema20Prev = 9;
+const ema50Prev = 8.5;
+const rsi = 60;
+const macdLine = 1.2;
+const signalLine = 1;
+const plusDI = 25;
+const minusDI = 15;
+const adx = 30;
+const kalman = 9.5;
+const currentClose = 10;
+
   return (
     <div className="container">
       <h1>📘 Firman Trading Diary</h1>
