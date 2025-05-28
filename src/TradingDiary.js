@@ -39,7 +39,18 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "500px" }} />;
 };
 
-// Fungsi simulasi untuk menghitung indikator (karena belum ada API)
+// Simulasi harga penutupan untuk saham BEI populer (berdasarkan rentang harga realistis)
+const simulatedStockPrices = {
+  BBCA: { basePrice: 9450, range: 500 }, // Bank Central Asia, sekitar 9000-10000
+  INDF: { basePrice: 7875, range: 300 }, // Indofood, sekitar 7500-8200
+  BREN: { basePrice: 6575, range: 400 }, // Barito Renewables, sekitar 6200-7000
+  GOTO: { basePrice: 68, range: 10 }, // GoTo Gojek Tokopedia, sekitar 60-80
+  TLKM: { basePrice: 3200, range: 200 }, // Telkom Indonesia, sekitar 3000-3400
+  BMRI: { basePrice: 6500, range: 400 }, // Bank Mandiri, sekitar 6100-6900
+  ASII: { basePrice: 4800, range: 300 }, // Astra International, sekitar 4500-5100
+};
+
+// Fungsi simulasi untuk menghitung indikator berdasarkan harga penutupan
 const simulateIndicators = (closePrice) => {
   const ema20 = closePrice * 1.02;
   const ema50 = closePrice * 1.01;
@@ -81,19 +92,36 @@ const TradingDiary = () => {
     reason: '',
     emotion: ''
   });
-  const [currentClose, setCurrentClose] = useState(9450);
   const [ticker, setTicker] = useState('BBCA');
+  const [currentClose, setCurrentClose] = useState(() => {
+    const stock = simulatedStockPrices['BBCA'];
+    return stock.basePrice + (Math.random() - 0.5) * stock.range;
+  });
 
+  // Perbarui harga penutupan saat ticker berubah
+  useEffect(() => {
+    const selectedStock = simulatedStockPrices[ticker] || simulatedStockPrices['BBCA'];
+    const newBasePrice = selectedStock.basePrice;
+    const newPrice = newBasePrice + (Math.random() - 0.5) * selectedStock.range;
+    setCurrentClose(newPrice);
+  }, [ticker]);
+
+  // Simulasi fluktuasi harga setiap 10 detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentClose(prev => {
+        const selectedStock = simulatedStockPrices[ticker] || simulatedStockPrices['BBCA'];
+        const fluctuation = (Math.random() - 0.5) * selectedStock.range * 0.1; // Fluktuasi lebih kecil
+        return prev + fluctuation;
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [ticker]);
+
+  // Simpan entries ke localStorage setiap kali entries berubah
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentClose(prev => prev + (Math.random() - 0.5) * 100);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   const indicators = simulateIndicators(currentClose);
 
