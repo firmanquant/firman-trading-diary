@@ -1,106 +1,98 @@
-import React, { useState } from 'react';
-import './index.css';
+import React, { useState, useEffect } from "react";
 
 const TradingDiary = () => {
   const [entries, setEntries] = useState([]);
   const [form, setForm] = useState({
-    date: '',
-    ticker: '',
-    entry: '',
-    exit: '',
-    reason: '',
-    emotion: ''
+    date: "",
+    ticker: "",
+    setup: "",
+    entry: "",
+    reason: "",
+    result: "",
   });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleAddEntry = () => {
-    const entryPrice = parseFloat(form.entry);
-    const exitPrice = parseFloat(form.exit);
-    const result = exitPrice - entryPrice;
-    const percent = (entryPrice && exitPrice)
-      ? ((result / entryPrice) * 100).toFixed(2)
-      : null;
-
-    setEntries([
-      ...entries,
-      {
-        ...form,
-        entry: entryPrice,
-        exit: exitPrice,
-        result: result.toFixed(2),
-        percent,
-      }
-    ]);
-
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setEntries([...entries, form]);
     setForm({
-      date: '',
-      ticker: '',
-      entry: '',
-      exit: '',
-      reason: '',
-      emotion: ''
+      date: "",
+      ticker: "",
+      setup: "",
+      entry: "",
+      reason: "",
+      result: "",
     });
   };
 
-  const totalTrades = entries.length;
-  const wins = entries.filter((e) => parseFloat(e.result) > 0).length;
-  const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(2) : '0.00';
-  const totalGainLoss = entries.reduce((acc, e) => acc + parseFloat(e.result), 0).toFixed(2);
-
   return (
     <div className="container">
-      <h1>📘 Firman Trading Diary</h1>
-      
-      <div className="form-grid">
-        <input type="date" name="date" value={form.date} onChange={handleChange} placeholder="Tanggal" />
-        <input type="text" name="ticker" value={form.ticker} onChange={handleChange} placeholder="Ticker" />
-        <input type="number" name="entry" value={form.entry} onChange={handleChange} placeholder="Entry Price" />
-        <input type="number" name="exit" value={form.exit} onChange={handleChange} placeholder="Exit Price" />
-        <input type="text" name="reason" value={form.reason} onChange={handleChange} placeholder="Alasan Setup" />
-        <input type="text" name="emotion" value={form.emotion} onChange={handleChange} placeholder="Catatan Emosi" />
-        <button onClick={handleAddEntry}>+ Tambah Entry</button>
-      </div>
-
-      <div className="summary">
-        <h2>📊 Ringkasan Performa</h2>
-        <p>Total Trade: {totalTrades}</p>
-        <p>Win Rate: {winRate}%</p>
-        <p>Total Gain/Loss: {totalGainLoss}</p>
-      </div>
-
-      <table className="diary-table">
+      <h1>Firman Trading Diary</h1>
+      <form onSubmit={handleSubmit} className="form">
+        <input name="date" value={form.date} onChange={handleChange} placeholder="Tanggal" />
+        <input name="ticker" value={form.ticker} onChange={handleChange} placeholder="Ticker" />
+        <input name="setup" value={form.setup} onChange={handleChange} placeholder="Setup" />
+        <input name="entry" value={form.entry} onChange={handleChange} placeholder="Entry" />
+        <input name="reason" value={form.reason} onChange={handleChange} placeholder="Alasan Psikologis" />
+        <input name="result" value={form.result} onChange={handleChange} placeholder="Hasil" />
+        <button type="submit">Simpan</button>
+      </form>
+      <table>
         <thead>
           <tr>
             <th>Tanggal</th>
             <th>Ticker</th>
+            <th>Setup</th>
             <th>Entry</th>
-            <th>Exit</th>
-            <th>Hasil</th>
-            <th>% Gain</th>
             <th>Alasan</th>
-            <th>Emosi</th>
+            <th>Hasil</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, index) => (
-            <tr key={index}>
+          {entries.map((entry, i) => (
+            <tr key={i}>
               <td>{entry.date}</td>
               <td>{entry.ticker}</td>
+              <td>{entry.setup}</td>
               <td>{entry.entry}</td>
-              <td>{entry.exit}</td>
-              <td>{entry.result}</td>
-              <td>{entry.percent ? `${entry.percent}%` : '-'}</td>
               <td>{entry.reason}</td>
-              <td>{entry.emotion}</td>
+              <td>{entry.result}</td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </table><TVChart symbol="IDX:BBCA" />
     </div>
   );
+};
+
+const TVChart = ({ symbol = "IDX:BBCA" }) => {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/tv.js";
+    script.async = true;
+    script.onload = () => {
+      new window.TradingView.widget({
+        container_id: "tv_chart_container",
+        symbol: symbol,
+        interval: "D",
+        timezone: "Asia/Jakarta",
+        theme: "dark",
+        style: "1",
+        locale: "id",
+        autosize: true,
+        hide_top_toolbar: false,
+        hide_side_toolbar: false,
+        allow_symbol_change: true,
+      });
+    };
+    document.getElementById("tv_chart_container").innerHTML = "";
+    document.getElementById("tv_chart_container").appendChild(script);
+  }, [symbol]);
+
+  return <div id="tv_chart_container" style={{ height: "500px", marginTop: "2rem" }} />;
 };
 
 export default TradingDiary;
