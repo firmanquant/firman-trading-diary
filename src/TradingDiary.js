@@ -145,7 +145,7 @@ const currentClose = 10;
   close={currentClose}
 />
             
-<TVChart symbol="IDX:BBCA" />
+<TVChart symbol={`IDX:${form.ticker || "BBCA"}`} />
             
     </div>
   );
