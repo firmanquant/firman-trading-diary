@@ -36,89 +36,107 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     container.appendChild(script);
   }, [symbol]);
 
-  return <div id="tv_chart_container" style={{ height: "500px" }} />;
+  return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
 // Fungsi untuk menghasilkan harga penutupan simulasi berdasarkan ticker
 const simulateStockPrice = (ticker) => {
-  // Gunakan karakter pertama ticker untuk menentukan kategori saham (simulasi sederhana)
   const firstChar = ticker.charAt(0).toUpperCase();
   let basePrice, range;
 
-  // Simulasi kategori saham berdasarkan huruf awal (A-E: blue chip, F-J: menengah, K-Z: kecil)
   if (firstChar >= 'A' && firstChar <= 'E') {
-    // Blue chip (contoh: BBCA, BBNI) - Harga tinggi
     basePrice = 8000;
     range = 1000;
   } else if (firstChar >= 'F' && firstChar <= 'J') {
-    // Saham menengah (contoh: INDF, ICBP) - Harga menengah
     basePrice = 4000;
     range = 500;
   } else {
-    // Saham kecil (contoh: KPIG, ZBRA) - Harga rendah
     basePrice = 500;
     range = 100;
   }
 
-  // Gunakan ticker untuk menghasilkan variasi unik (menggunakan hash sederhana)
   let hash = 0;
   for (let i = 0; i < ticker.length; i++) {
     hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const variation = (hash % 1000) - 500; // Variasi acak berdasarkan ticker (-500 hingga +500)
+  const variation = (hash % 1000) - 500;
 
   return {
-    close: basePrice + variation + (Math.random() - 0.5) * range, // Harga penutupan simulasi
-    closePrev: basePrice + variation + (Math.random() - 0.5) * range * 0.9, // Harga penutupan kemarin
+    close: basePrice + variation + (Math.random() - 0.5) * range,
+    closePrev: basePrice + variation + (Math.random() - 0.5) * range * 0.9,
   };
 };
 
 // Fungsi simulasi untuk menghitung indikator berdasarkan harga penutupan kemarin
 const simulateIndicators = (close, closePrev) => {
-  // Simulasi EMA (menggunakan pendekatan sederhana karena tidak ada data historis)
+  // Simulasi EMA (menggunakan pendekatan sederhana)
   const alpha20 = 2 / (20 + 1);
   const alpha50 = 2 / (50 + 1);
-  const ema20 = closePrev * (1 - alpha20) + close * alpha20; // Simulasi EMA20
-  const ema50 = closePrev * (1 - alpha50) + close * alpha50; // Simulasi EMA50
-  const ema20Prev = closePrev * (1 - alpha20) + (closePrev * 0.99) * alpha20; // Simulasi EMA20 kemarin
-  const ema50Prev = closePrev * (1 - alpha50) + (closePrev * 0.99) * alpha50; // Simulasi EMA50 kemarin
+  const ema20 = closePrev * (1 - alpha20) + close * alpha20;
+  const ema50 = closePrev * (1 - alpha50) + close * alpha50;
+  const ema20Prev = closePrev * (1 - alpha20) + (closePrev * 0.99) * alpha20;
+  const ema50Prev = closePrev * (1 - alpha50) + (closePrev * 0.99) * alpha50;
 
-  // Simulasi RSI (menggunakan perubahan harga sederhana)
+  // Simulasi EMA untuk Trend 1W (menggunakan faktor perpanjangan timeframe mingguan)
+  const weeklyFactor = 0.8; // Simulasi timeframe mingguan dengan faktor smoothing
+  const ema20_1W = closePrev * (1 - alpha20 * weeklyFactor) + close * (alpha20 * weeklyFactor);
+  const ema50_1W = closePrev * (1 - alpha50 * weeklyFactor) + close * (alpha50 * weeklyFactor);
+
+  // Simulasi RSI
   const change = close - closePrev;
   const gain = change > 0 ? change : 0;
   const loss = change < 0 ? -change : 0;
-  const avgGain = gain * 0.5; // Simulasi rata-rata gain
-  const avgLoss = loss * 0.5; // Simulasi rata-rata loss
-  const rs = avgGain / (avgLoss || 1); // Hindari pembagian dengan 0
+  const avgGain = gain * 0.5;
+  const avgLoss = loss * 0.5;
+  const rs = avgGain / (avgLoss || 1);
   const rsi = 100 - (100 / (1 + rs));
 
   // Simulasi MACD
-  const macdFast = closePrev * (1 - 2 / (12 + 1)) + close * (2 / (12 + 1)); // Simulasi EMA12
-  const macdSlow = closePrev * (1 - 2 / (26 + 1)) + close * (2 / (26 + 1)); // Simulasi EMA26
-  const macdLine = macdFast - macdSlow;
-  const signalLine = macdLine * 0.9; // Simulasi signal line (pendekatan sederhana)
+  const alpha12 = 2 / (12 + 1);
+  const alpha26 = 2 / (26 + 1);
+  const alpha9 = 2 / (9 + 1);
+  const ema12 = closePrev * (1 - alpha12) + close * alpha12;
+  const ema26 = closePrev * (1 - alpha26) + close * alpha26;
+  const macdLine = ema12 - ema26;
+  const signalLine = macdLine * (1 - alpha9) + (macdLine * 0.9) * alpha9;
+
+  // Simulasi MACD 4H (menggunakan faktor perpendekan timeframe 4 jam)
+  const fourHourFactor = 1.2; // Simulasi timeframe 4 jam dengan faktor smoothing
+  const ema12_4H = closePrev * (1 - alpha12 * fourHourFactor) + close * (alpha12 * fourHourFactor);
+  const ema26_4H = closePrev * (1 - alpha26 * fourHourFactor) + close * (alpha26 * fourHourFactor);
+  const macdLine_4H = ema12_4H - ema26_4H;
+  const signalLine_4H = macdLine_4H * (1 - alpha9 * fourHourFactor) + (macdLine_4H * 0.9) * (alpha9 * fourHourFactor);
 
   // Simulasi DMI/ADX
-  const plusDI = Math.random() * 50; // Simulasi +DI
-  const minusDI = Math.random() * 50; // Simulasi -DI
-  const adx = Math.random() * 50; // Simulasi ADX
+  const plusDI = Math.random() * 50;
+  const minusDI = Math.random() * 50;
+  const adx = Math.random() * 50;
 
   // Simulasi Kalman Filter
   const kalmanGain = 0.5;
   const kalman = closePrev + kalmanGain * (close - closePrev);
+
+  // Simulasi ATR (sebagai persentase dari harga penutupan)
+  const atrValue = Math.abs(close - closePrev) * 1.5; // Simulasi sederhana ATR
+  const atrPct = (atrValue / close) * 100;
 
   return {
     ema20,
     ema50,
     ema20Prev,
     ema50Prev,
+    ema20_1W,
+    ema50_1W,
     rsi,
     macdLine,
     signalLine,
+    macdLine_4H,
+    signalLine_4H,
     plusDI,
     minusDI,
     adx,
     kalman,
+    atrPct,
     close,
   };
 };
@@ -139,13 +157,11 @@ const TradingDiary = () => {
   const [ticker, setTicker] = useState('BBCA');
   const [prices, setPrices] = useState(() => simulateStockPrice('BBCA'));
 
-  // Perbarui harga penutupan saat ticker berubah
   useEffect(() => {
     const newPrices = simulateStockPrice(ticker);
     setPrices(newPrices);
   }, [ticker]);
 
-  // Simpan entries ke localStorage setiap kali entries berubah
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
@@ -225,12 +241,17 @@ const TradingDiary = () => {
           ema50={indicators.ema50}
           ema20Prev={indicators.ema20Prev}
           ema50Prev={indicators.ema50Prev}
+          ema20_1W={indicators.ema20_1W}
+          ema50_1W={indicators.ema50_1W}
           rsi={indicators.rsi}
           macdLine={indicators.macdLine}
           signalLine={indicators.signalLine}
+          macdLine_4H={indicators.macdLine_4H}
+          signalLine_4H={indicators.signalLine_4H}
           plusDI={indicators.plusDI}
           minusDI={indicators.minusDI}
           adx={indicators.adx}
+          atrPct={indicators.atrPct}
           kalman={indicators.kalman}
           close={indicators.close}
         />
