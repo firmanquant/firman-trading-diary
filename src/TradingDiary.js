@@ -495,13 +495,13 @@ const TradingDiary = () => {
     console.log('Prompt sent to Groq:', prompt);
 
     try {
-      const response = await fetch('https://api.groq.com/v1/inference', {
+      const response = await fetch('/api/groq', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ prompt })
           model: 'llama2-70b',
           prompt: prompt,
         }),
