@@ -1,4 +1,92 @@
+/* Global reset dan font */
 body {
   margin: 0;
-  font-family: sans-serif;
+  padding: 20px;
+  background-color: #121212;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Container utama */
+.container {
+  max-width: 1000px;
+  margin: auto;
+}
+
+/* Judul */
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: #90caf9;
+}
+
+/* Form grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+input {
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+button {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #1976d2;
+}
+
+/* Summary box */
+.summary {
+  background-color: #1e1e1e;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.summary h2 {
+  margin-top: 0;
+  color: #81d4fa;
+}
+
+/* Tabel jurnal */
+.diary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.diary-table th,
+.diary-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.diary-table th {
+  background-color: #263238;
+  color: #b2ebf2;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.diary-table tr:hover {
+  background-color: #2a2a2a;
 }
