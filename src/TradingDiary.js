@@ -36,7 +36,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     container.appendChild(script);
   }, [symbol]);
 
-  return <div id="tv_chart_container" style={{ height: "400px" }} />;
+  return <div id="tv_chart_container" style={{ height: "350px" }} />; // Tinggi chart dikurangi
 };
 
 // Kelas FirmanQuantStrategy
@@ -114,34 +114,28 @@ class FirmanQuantStrategy {
     this.updatePerformance();
   }
 
-  // ===== INDICATOR CALCULATIONS =====
   calculateIndicators() {
     const idx = this.closes.length - 1;
 
-    // Moving Averages
     this.ema20Values.push(this.calcEMA(this.closes, this.ema20Len));
     this.ema50Values.push(this.calcEMA(this.closes, this.ema50Len));
     this.sma20Values.push(this.calcSMA(this.closes, this.sma20Len));
     this.sma50Values.push(this.calcSMA(this.closes, this.sma50Len));
 
-    // Kalman Filter
     const kalmanVal = this.enableKalman
       ? this.kalmanFilter(this.closes[idx], this.kalmanGain)
       : NaN;
     this.kalmanValues.push(kalmanVal);
 
-    // DMI/ADX
     const dmi = this.calcDMI(this.highs, this.lows, this.closes, this.dmiLen, this.adxSmooth);
     this.plusDIValues.push(dmi.plusDI);
     this.minusDIValues.push(dmi.minusDI);
     this.adxValues.push(dmi.adx);
 
-    // MACD
     const macd = this.calcMACD(this.closes, this.macdFast, this.macdSlow, this.macdSignal);
     this.macdLineValues.push(macd.macdLine);
     this.signalLineValues.push(macd.signalLine);
 
-    // RSI
     this.rsiValues.push(this.calcRSI(this.closes, this.rsiLen));
   }
 
@@ -149,10 +143,8 @@ class FirmanQuantStrategy {
     if (data.length < length) return NaN;
     const multiplier = 2.0 / (length + 1);
 
-    // Hitung SMA sebagai nilai awal EMA
     let ema = data.slice(0, length).reduce((sum, val) => sum + val, 0) / length;
 
-    // Hitung EMA untuk titik data selanjutnya
     for (let i = length; i < data.length; i++) {
       ema = (data[i] - ema) * multiplier + ema;
     }
@@ -176,7 +168,6 @@ class FirmanQuantStrategy {
     const plusDMValues = [];
     const minusDMValues = [];
 
-    // 1. Hitung True Range dan Directional Movement
     for (let i = 1; i < highs.length; i++) {
       const tr = Math.max(
         highs[i] - lows[i],
@@ -195,12 +186,10 @@ class FirmanQuantStrategy {
       minusDMValues.push(minusDM);
     }
 
-    // 2. Smoothing menggunakan Wilder's method
     const smoothedTR = this.wilderSmoothing(trValues, diLen);
     const smoothedPlusDM = this.wilderSmoothing(plusDMValues, diLen);
     const smoothedMinusDM = this.wilderSmoothing(minusDMValues, diLen);
 
-    // 3. Hitung Directional Indicators
     const plusDI = [];
     const minusDI = [];
     for (let i = 0; i < smoothedTR.length; i++) {
@@ -208,7 +197,6 @@ class FirmanQuantStrategy {
       minusDI.push(100 * smoothedMinusDM[i] / smoothedTR[i]);
     }
 
-    // 4. Hitung ADX
     const dxValues = [];
     for (let i = 0; i < plusDI.length; i++) {
       const diDiff = Math.abs(plusDI[i] - minusDI[i]);
@@ -483,7 +471,7 @@ const TradingDiary = () => {
   const [dailyData, setDailyData] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [fourHourData, setFourHourData] = useState([]);
-  const [showTable, setShowTable] = useState(false); // State untuk toggle tabel
+  const [showTable, setShowTable] = useState(false);
 
   useEffect(() => {
     const strategyParams = {
@@ -623,7 +611,6 @@ const TradingDiary = () => {
   const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
   const totalGainLoss = entries.reduce((sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0), 0);
 
-  // Fungsi untuk toggle tampilan tabel
   const toggleTable = () => {
     setShowTable(!showTable);
   };
@@ -675,14 +662,12 @@ const TradingDiary = () => {
         )}
       </div>
 
-      {/* Tombol "Lihat Hasil" untuk toggle tabel */}
       {entries.length > 0 && (
         <button className="toggle-table-btn" onClick={toggleTable}>
           {showTable ? 'Sembunyikan Hasil' : 'Lihat Hasil'}
         </button>
       )}
 
-      {/* Tabel hanya ditampilkan jika showTable bernilai true */}
       {entries.length > 0 && showTable && (
         <table>
           <thead>
