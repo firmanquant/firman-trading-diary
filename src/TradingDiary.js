@@ -470,7 +470,13 @@ const TradingDiary = () => {
 
   // Fungsi untuk memanggil API Groq
   const fetchGroqAnalysis = async () => {
-    if (!indicators) return; // Pastikan indikator sudah ada
+    if (!indicators) {
+      console.log('Indicators not ready yet.');
+      return;
+    }
+
+    console.log('Fetching Groq analysis...');
+    console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY ? 'Available' : 'Not Available');
 
     const prompt = `
       Analisis saham ${ticker} berdasarkan indikator berikut:
@@ -486,6 +492,8 @@ const TradingDiary = () => {
       Berikan analisis singkat dan rekomendasi trading (beli/jual/tahan) dalam 3-5 kalimat.
     `;
 
+    console.log('Prompt sent to Groq:', prompt);
+
     try {
       const response = await fetch('https://api.groq.com/v1/inference', {
         method: 'POST',
@@ -499,11 +507,21 @@ const TradingDiary = () => {
         }),
       });
 
+      console.log('Groq API response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Groq API error response:', errorText);
+        setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${errorText}`);
+        return;
+      }
+
       const data = await response.json();
+      console.log('Groq API response data:', data);
       setGroqAnalysis(data.response || 'Tidak ada analisis dari Groq.');
     } catch (error) {
-      console.error('Error calling Groq API:', error);
-      setGroqAnalysis('Gagal mengambil analisis dari Groq.');
+      console.error('Error calling Groq API:', error.message);
+      setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${error.message}`);
     }
   };
 
