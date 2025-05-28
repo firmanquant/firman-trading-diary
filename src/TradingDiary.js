@@ -39,133 +39,180 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   return <div id="tv_chart_container" style={{ height: "400px" }} />;
 };
 
-// Fungsi untuk menghasilkan data historis simulasi (50 bar terakhir)
-const simulateHistoricalData = (ticker, numBars = 50) => {
-  const firstChar = ticker.charAt(0).toUpperCase();
-  let basePrice, range;
+// Fungsi untuk mengambil data historis dari API
+const fetchHistoricalData = async (ticker, timeframe = 'daily') => {
+  try {
+    const response = await fetch(`/api/stock?ticker=${ticker}&timeframe=${timeframe}`);
+    const data = await response.json();
 
-  if (firstChar >= 'A' && firstChar <= 'E') {
-    basePrice = 8000;
-    range = 1000;
-  } else if (firstChar >= 'F' && firstChar <= 'J') {
-    basePrice = 4000;
-    range = 500;
-  } else {
-    basePrice = 500;
-    range = 100;
+    if (data['Error Message']) {
+      throw new Error(data['Error Message']);
+    }
+
+    let timeSeries;
+    if (timeframe === 'weekly') {
+      timeSeries = data['Weekly Time Series'];
+    } else if (timeframe === '4h') {
+      timeSeries = data['Time Series (60min)'];
+    } else {
+      timeSeries = data['Time Series (Daily)'];
+    }
+
+    if (!timeSeries) {
+      throw new Error('No time series data available');
+    }
+
+    const historicalData = Object.entries(timeSeries).map(([date, values]) => ({
+      date,
+      close: parseFloat(values['4. close']),
+      high: parseFloat(values['2. high']),
+      low: parseFloat(values['3. low']),
+    }));
+
+    return historicalData.slice(0, 50); // Ambil 50 bar terakhir
+  } catch (error) {
+    console.error('Failed to fetch historical data:', error);
+    return [];
   }
-
-  let hash = 0;
-  for (let i = 0; i < ticker.length; i++) {
-    hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const variation = (hash % 1000) - 500;
-
-  const historicalData = [];
-  let prevClose = basePrice + variation;
-  for (let i = 0; i < numBars; i++) {
-    const close = prevClose + (Math.random() - 0.5) * range * 0.1;
-    const high = close + Math.random() * range * 0.05;
-    const low = close - Math.random() * range * 0.05;
-    historicalData.push({ close, high, low });
-    prevClose = close;
-  }
-
-  return historicalData.reverse(); // Bar terbaru di indeks 0
 };
 
 // Fungsi untuk menghitung EMA
-const calcEMA = (prices, length) => {
-  const alpha = 2 / (length + 1);
-  let ema = prices[prices.length - 1].close; // Mulai dengan harga pertama
-  for (let i = prices.length - 2; i >= 0; i--) {
-    ema = prices[i].close * alpha + ema * (1 - alpha);
+const calcEMA = (data, length) => {
+  if (data.length < length) return NaN;
+  const multiplier = 2.0 / (length + 1);
+  let ema = data.slice(0, length).reduce((sum, val) => sum + val.close, 0) / length;
+  for (let i = length; i < data.length; i++) {
+    ema = (data[i].close - ema) * multiplier + ema;
   }
   return ema;
 };
 
 // Fungsi untuk menghitung RSI
-const calcRSI = (prices, length) => {
-  let gains = 0, losses = 0;
-  for (let i = 0; i < length && i < prices.length - 1; i++) {
-    const change = prices[i].close - prices[i + 1].close;
-    if (change > 0) gains += change;
-    else losses += -change;
+const calcRSI = (data, length) => {
+  if (data.length < length + 1) return NaN;
+
+  let avgGain = 0, avgLoss = 0;
+  for (let i = 1; i <= length; i++) {
+    const change = data[i].close - data[i - 1].close;
+    if (change > 0) avgGain += change;
+    else avgLoss -= change;
   }
-  const avgGain = gains / length;
-  const avgLoss = losses / length;
-  const rs = avgGain / (avgLoss || 1);
+
+  avgGain /= length;
+  avgLoss /= length;
+
+  for (let i = length + 1; i < data.length; i++) {
+    const change = data[i].close - data[i - 1].close;
+    const gain = Math.max(0, change);
+    const loss = Math.max(0, -change);
+    avgGain = ((avgGain * (length - 1)) + gain) / length;
+    avgLoss = ((avgLoss * (length - 1)) + loss) / length;
+  }
+
+  const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
 };
 
 // Fungsi untuk menghitung MACD
-const calcMACD = (prices, fastLength, slowLength, signalLength) => {
-  const emaFast = calcEMA(prices, fastLength);
-  const emaSlow = calcEMA(prices, slowLength);
-  const macdLine = emaFast - emaSlow;
+const calcMACD = (data, fastLen, slowLen, signalLen) => {
+  const fastEMA = calcEMA(data, fastLen);
+  const slowEMA = calcEMA(data, slowLen);
+  const macdLine = fastEMA - slowEMA;
 
-  // Simulasi signal line (EMA dari MACD Line)
-  const macdValues = [];
-  for (let i = prices.length - 1; i >= 0; i--) {
-    const emaFast_i = calcEMA(prices.slice(i), fastLength);
-    const emaSlow_i = calcEMA(prices.slice(i), slowLength);
-    macdValues.push(emaFast_i - emaSlow_i);
+  const macdLineHistory = [];
+  for (let i = data.length - 1; i >= 0; i--) {
+    const emaFast = calcEMA(data.slice(i), fastLen);
+    const emaSlow = calcEMA(data.slice(i), slowLen);
+    macdLineHistory.push(emaFast - emaSlow);
   }
-  const signalLine = calcEMA(macdValues.map(val => ({ close: val })), signalLength);
+  const signalLine = calcEMA(macdLineHistory.map(val => ({ close: val })), signalLen);
 
   return { macdLine, signalLine };
 };
 
+// Fungsi Wilder's Smoothing
+const wilderSmoothing = (values, period) => {
+  const smoothed = [];
+  const sum = values.slice(0, period).reduce((a, b) => a + b, 0);
+  smoothed.push(sum / period);
+
+  for (let i = period; i < values.length; i++) {
+    const prev = smoothed[smoothed.length - 1];
+    const newValue = (prev * (period - 1) + values[i]) / period;
+    smoothed.push(newValue);
+  }
+  return smoothed;
+};
+
 // Fungsi untuk menghitung DMI/ADX
-const calcDMI = (prices, diLength, adxSmooth) => {
-  let trSum = 0, plusDMSum = 0, minusDMSum = 0;
-  for (let i = 0; i < diLength && i < prices.length - 1; i++) {
-    const high = prices[i].high;
-    const low = prices[i].low;
-    const prevHigh = prices[i + 1].high;
-    const prevLow = prices[i + 1].low;
-    const prevClose = prices[i + 1].close;
+const calcDMI = (highs, lows, closes, diLen, adxSmooth) => {
+  const trValues = [];
+  const plusDMValues = [];
+  const minusDMValues = [];
 
+  for (let i = 1; i < highs.length; i++) {
     const tr = Math.max(
-      high - low,
-      Math.abs(high - prevClose),
-      Math.abs(low - prevClose)
+      highs[i].high - lows[i].low,
+      Math.max(
+        Math.abs(highs[i].high - closes[i - 1].close),
+        Math.abs(lows[i].low - closes[i - 1].close)
+      )
     );
-    const plusDM = high - prevHigh > prevLow - low ? Math.max(high - prevHigh, 0) : 0;
-    const minusDM = prevLow - low > high - prevHigh ? Math.max(prevLow - low, 0) : 0;
+    trValues.push(tr);
 
-    trSum += tr;
-    plusDMSum += plusDM;
-    minusDMSum += minusDM;
+    const upMove = highs[i].high - highs[i - 1].high;
+    const downMove = lows[i - 1].low - lows[i].low;
+
+    const plusDM = (upMove > downMove && upMove > 0) ? upMove : 0;
+    const minusDM = (downMove > upMove && downMove > 0) ? downMove : 0;
+
+    plusDMValues.push(plusDM);
+    minusDMValues.push(minusDM);
   }
 
-  const plusDI = (plusDMSum / trSum) * 100;
-  const minusDI = (minusDMSum / trSum) * 100;
+  const smoothedTR = wilderSmoothing(trValues, diLen);
+  const smoothedPlusDM = wilderSmoothing(plusDMValues, diLen);
+  const smoothedMinusDM = wilderSmoothing(minusDMValues, diLen);
 
-  // Simulasi ADX
-  const dx = Math.abs(plusDI - minusDI) / (plusDI + minusDI || 1) * 100;
-  const adxValues = Array(adxSmooth).fill(dx); // Simulasi sederhana
-  const adx = calcEMA(adxValues.map(val => ({ close: val })), adxSmooth);
+  const plusDI = [];
+  const minusDI = [];
+  for (let i = 0; i < smoothedTR.length; i++) {
+    plusDI.push(100 * smoothedPlusDM[i] / smoothedTR[i]);
+    minusDI.push(100 * smoothedMinusDM[i] / smoothedTR[i]);
+  }
 
-  return { plusDI, minusDI, adx };
+  const dxValues = [];
+  for (let i = 0; i < plusDI.length; i++) {
+    const diDiff = Math.abs(plusDI[i] - minusDI[i]);
+    const diSum = plusDI[i] + minusDI[i];
+    dxValues.push(100 * (diDiff / diSum));
+  }
+
+  const adx = wilderSmoothing(dxValues, adxSmooth);
+
+  return {
+    plusDI: plusDI[plusDI.length - 1],
+    minusDI: minusDI[minusDI.length - 1],
+    adx: adx[adx.length - 1],
+  };
 };
 
 // Fungsi untuk menghitung Kalman Filter
-const calcKalman = (prices, gain) => {
-  let kalman = prices[prices.length - 1].close;
-  for (let i = prices.length - 2; i >= 0; i--) {
-    kalman = kalman + gain * (prices[i].close - kalman);
+const calcKalman = (data, gain) => {
+  let kalman = data[data.length - 1].close;
+  for (let i = data.length - 2; i >= 0; i--) {
+    kalman = kalman + gain * (data[i].close - kalman);
   }
   return kalman;
 };
 
 // Fungsi untuk menghitung ATR
-const calcATR = (prices, length) => {
+const calcATR = (data, length) => {
   let trSum = 0;
-  for (let i = 0; i < length && i < prices.length - 1; i++) {
-    const high = prices[i].high;
-    const low = prices[i].low;
-    const prevClose = prices[i + 1].close;
+  for (let i = 0; i < length && i < data.length - 1; i++) {
+    const high = data[i].high;
+    const low = data[i].low;
+    const prevClose = data[i + 1].close;
     const tr = Math.max(
       high - low,
       Math.abs(high - prevClose),
@@ -176,57 +223,37 @@ const calcATR = (prices, length) => {
   return trSum / length;
 };
 
-// Fungsi untuk menghitung indikator berdasarkan data historis
-const simulateIndicators = (historicalData) => {
-  const close = historicalData[0].close;
+// Fungsi untuk menghitung indikator
+const calculateIndicators = (dailyData, weeklyData, fourHourData) => {
+  const close = dailyData[0].close;
 
-  // EMA20 dan EMA50
-  const ema20 = calcEMA(historicalData, 20);
-  const ema50 = calcEMA(historicalData, 50);
-  const ema20Prev = calcEMA(historicalData.slice(1), 20);
-  const ema50Prev = calcEMA(historicalData.slice(1), 50);
+  // EMA20 dan EMA50 (Daily)
+  const ema20 = calcEMA(dailyData, 20);
+  const ema50 = calcEMA(dailyData, 50);
+  const ema20Prev = calcEMA(dailyData.slice(1), 20);
+  const ema50Prev = calcEMA(dailyData.slice(1), 50);
 
-  // Trend 1W (simulasi dengan mengelompokkan data harian ke mingguan)
-  const weeklyData = [];
-  for (let i = 0; i < historicalData.length; i += 5) {
-    const weekSlice = historicalData.slice(i, i + 5);
-    if (weekSlice.length > 0) {
-      const close = weekSlice[0].close;
-      const high = Math.max(...weekSlice.map(d => d.high));
-      const low = Math.min(...weekSlice.map(d => d.low));
-      weeklyData.push({ close, high, low });
-    }
-  }
+  // EMA20 dan EMA50 (Weekly untuk Trend 1W)
   const ema20_1W = calcEMA(weeklyData, 20);
   const ema50_1W = calcEMA(weeklyData, 50);
 
-  // RSI
-  const rsi = calcRSI(historicalData, 14);
+  // RSI (Daily)
+  const rsi = calcRSI(dailyData, 14);
 
-  // MACD
-  const { macdLine, signalLine } = calcMACD(historicalData, 12, 26, 9);
+  // MACD (Daily)
+  const { macdLine, signalLine } = calcMACD(dailyData, 12, 26, 9);
 
-  // MACD 4H (simulasi dengan mengelompokkan data harian ke 4 jam)
-  const fourHourData = [];
-  for (let i = 0; i < historicalData.length; i += 2) {
-    const fourHourSlice = historicalData.slice(i, i + 2);
-    if (fourHourSlice.length > 0) {
-      const close = fourHourSlice[0].close;
-      const high = Math.max(...fourHourSlice.map(d => d.high));
-      const low = Math.min(...fourHourSlice.map(d => d.low));
-      fourHourData.push({ close, high, low });
-    }
-  }
+  // MACD 4H
   const { macdLine: macdLine_4H, signalLine: signalLine_4H } = calcMACD(fourHourData, 12, 26, 9);
 
-  // DMI/ADX
-  const { plusDI, minusDI, adx } = calcDMI(historicalData, 14, 14);
+  // DMI/ADX (Daily)
+  const { plusDI, minusDI, adx } = calcDMI(dailyData, dailyData, dailyData, 14, 14);
 
-  // Kalman Filter
-  const kalman = calcKalman(historicalData, 0.5);
+  // Kalman Filter (Daily)
+  const kalman = calcKalman(dailyData, 0.5);
 
-  // ATR
-  const atrValue = calcATR(historicalData, 14);
+  // ATR (Daily)
+  const atrValue = calcATR(dailyData, 14);
   const atrPct = (atrValue / close) * 100;
 
   return {
@@ -264,18 +291,46 @@ const TradingDiary = () => {
     emotion: ''
   });
   const [ticker, setTicker] = useState('BBCA');
-  const [historicalData, setHistoricalData] = useState(() => simulateHistoricalData('BBCA'));
+  const [dailyData, setDailyData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [fourHourData, setFourHourData] = useState([]);
+  const [indicators, setIndicators] = useState(null);
 
   useEffect(() => {
-    const newHistoricalData = simulateHistoricalData(ticker);
-    setHistoricalData(newHistoricalData);
+    const fetchData = async () => {
+      const daily = await fetchHistoricalData(ticker, 'daily');
+      const weekly = await fetchHistoricalData(ticker, 'weekly');
+      let fourHour = await fetchHistoricalData(ticker, '4h');
+
+      if (fourHour.length === 0) {
+        fourHour = [];
+        for (let i = 0; i < daily.length; i += 2) {
+          const slice = daily.slice(i, i + 2);
+          if (slice.length > 0) {
+            const close = slice[0].close;
+            const high = Math.max(...slice.map(d => d.high));
+            const low = Math.min(...slice.map(d => d.low));
+            fourHour.push({ close, high, low });
+          }
+        }
+      }
+
+      setDailyData(daily);
+      setWeeklyData(weekly);
+      setFourHourData(fourHour);
+
+      if (daily.length > 0 && weekly.length > 0 && fourHour.length > 0) {
+        const calculatedIndicators = calculateIndicators(daily, weekly, fourHour);
+        setIndicators(calculatedIndicators);
+      }
+    };
+
+    fetchData();
   }, [ticker]);
 
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
-
-  const indicators = simulateIndicators(historicalData);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -345,25 +400,29 @@ const TradingDiary = () => {
           <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
         </div>
 
-        <SignalDashboard
-          ema20={indicators.ema20}
-          ema50={indicators.ema50}
-          ema20Prev={indicators.ema20Prev}
-          ema50Prev={indicators.ema50Prev}
-          ema20_1W={indicators.ema20_1W}
-          ema50_1W={indicators.ema50_1W}
-          rsi={indicators.rsi}
-          macdLine={indicators.macdLine}
-          signalLine={indicators.signalLine}
-          macdLine_4H={indicators.macdLine_4H}
-          signalLine_4H={indicators.signalLine_4H}
-          plusDI={indicators.plusDI}
-          minusDI={indicators.minusDI}
-          adx={indicators.adx}
-          atrPct={indicators.atrPct}
-          kalman={indicators.kalman}
-          close={indicators.close}
-        />
+        {indicators ? (
+          <SignalDashboard
+            ema20={indicators.ema20}
+            ema50={indicators.ema50}
+            ema20Prev={indicators.ema20Prev}
+            ema50Prev={indicators.ema50Prev}
+            ema20_1W={indicators.ema20_1W}
+            ema50_1W={indicators.ema50_1W}
+            rsi={indicators.rsi}
+            macdLine={indicators.macdLine}
+            signalLine={indicators.signalLine}
+            macdLine_4H={indicators.macdLine_4H}
+            signalLine_4H={indicators.signalLine_4H}
+            plusDI={indicators.plusDI}
+            minusDI={indicators.minusDI}
+            adx={indicators.adx}
+            atrPct={indicators.atrPct}
+            kalman={indicators.kalman}
+            close={indicators.close}
+          />
+        ) : (
+          <p>Loading indicators...</p>
+        )}
       </div>
 
       {entries.length > 0 && (
