@@ -181,50 +181,6 @@ export const generateSignals = ({
   return { buySignal, sellSignal };
 };
 
-// Komponen Dashboard
-const SignalDashboard = ({
-  ema20,
-  ema50,
-  rsi,
-  macdLine,
-  signalLine,
-  plusDI,
-  minusDI,
-  adx,
-  kalman,
-  close,
-  ema20Prev,
-  ema50Prev
-}) => {
-  const { buySignal, sellSignal } = generateSignals({
-    ema20,
-    ema50,
-    ema20Prev,
-    ema50Prev,
-    rsi,
-    macdLine,
-    signalLine,
-    plusDI,
-    minusDI,
-    adx,
-    kalman,
-    close
-  });
-
-  return (
-    <div className="dashboard">
-      <h2>📊 Dashboard Sinyal</h2>
-      <p><strong>Sinyal:</strong> {buySignal ? "BELI ✅" : sellSignal ? "JUAL ❌" : "TIDAK ADA"}</p>
-      <p><strong>Trend EMA:</strong> {ema20 > ema50 ? "🟢 Uptrend" : "🔴 Downtrend"}</p>
-      <p><strong>RSI:</strong> {rsi.toFixed(2)}</p>
-      <p><strong>MACD:</strong> {macdLine > signalLine ? "Bullish" : "Bearish"}</p>
-      <p><strong>DI+ vs DI-:</strong> {plusDI > minusDI ? "+DI Dominan" : "-DI Dominan"}</p>
-    </div>
-  );
-};
-
-export default SignalDashboard;
-
 import SignalDashboard from "./SignalDashboard";
 
 // ...dalam komponen return()
