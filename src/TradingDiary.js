@@ -116,8 +116,23 @@ const TradingDiary = () => {
           ))}
         </tbody>
       </table>
-
-      <TVChart symbol="IDX:BBCA" />
+            
+<TVChart symbol="IDX:BBCA" />
+            
+<SignalDashboard
+  ema20={ema20}
+  ema50={ema50}
+  ema20Prev={ema20Prev}
+  ema50Prev={ema50Prev}
+  rsi={rsi}
+  macdLine={macdLine}
+  signalLine={signalLine}
+  plusDI={plusDI}
+  minusDI={minusDI}
+  adx={adx}
+  kalman={kalman}
+  close={currentClose}
+/>
     </div>
   );
 };
@@ -212,17 +227,4 @@ export default SignalDashboard;
 import SignalDashboard from "./SignalDashboard";
 
 // ...dalam komponen return()
-<SignalDashboard
-  ema20={ema20}
-  ema50={ema50}
-  ema20Prev={ema20Prev}
-  ema50Prev={ema50Prev}
-  rsi={rsi}
-  macdLine={macdLine}
-  signalLine={signalLine}
-  plusDI={plusDI}
-  minusDI={minusDI}
-  adx={adx}
-  kalman={kalman}
-  close={currentClose}
-/>
+
