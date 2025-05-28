@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
   useEffect(() => {
-    const container = document.getElementById("tv_chart_container");
-    if (!container) return;
+  const container = document.getElementById("tv_chart_container");
+  if (!container) return;
 
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/tv.js";
-    script.async = true;
-    script.onload = () => {
+  // Clear container
+  container.innerHTML = "";
+
+  const script = document.createElement("script");
+  script.src = "https://s3.tradingview.com/tv.js";
+  script.async = true;
+  script.onload = () => {
+    if (window.TradingView) {
       new window.TradingView.widget({
         container_id: "tv_chart_container",
         symbol,
@@ -19,7 +23,11 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
         locale: "id",
         autosize: true,
       });
-    };
+    }
+  };
+
+  container.appendChild(script);
+}, [symbol]); // <=== pastikan symbol jadi dependency
 
     container.innerHTML = ""; // Clear chart before reload
     container.appendChild(script);
