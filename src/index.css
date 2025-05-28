@@ -5,7 +5,7 @@ body {
   background-color: #121212;
   color: #e0e0e0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 14px; /* Ukuran font dasar lebih kecil */
+  font-size: 14px;
 }
 
 /* Container utama */
@@ -16,7 +16,7 @@ body {
 
 /* Judul */
 h1 {
-  font-size: 1.5rem; /* Judul lebih kecil */
+  font-size: 1.5rem;
   margin-bottom: 15px;
   color: #90caf9;
   text-align: center;
@@ -39,7 +39,7 @@ h1 {
   border-radius: 4px;
   background-color: #2a2a2a;
   color: #e0e0e0;
-  font-size: 0.85rem; /* Font input lebih kecil */
+  font-size: 0.85rem;
   transition: border 0.3s;
 }
 
@@ -55,11 +55,28 @@ h1 {
   padding: 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem; /* Font tombol lebih kecil */
+  font-size: 0.85rem;
   transition: background-color 0.3s;
 }
 
 .form button:hover {
+  background-color: #1976d2;
+}
+
+/* Tombol "Lihat Hasil" */
+.toggle-table-btn {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.3s;
+  margin-bottom: 15px;
+}
+
+.toggle-table-btn:hover {
   background-color: #1976d2;
 }
 
@@ -83,7 +100,7 @@ h1 {
 .summary-card h2 {
   margin-top: 0;
   color: #81d4fa;
-  font-size: 1.2rem; /* Judul lebih kecil */
+  font-size: 1.2rem;
 }
 
 /* Tabel jurnal */
@@ -101,7 +118,7 @@ table td {
   padding: 8px;
   text-align: left;
   border-bottom: 1px solid #333;
-  font-size: 0.85rem; /* Font tabel lebih kecil */
+  font-size: 0.85rem;
 }
 
 table th {
@@ -123,7 +140,7 @@ table button {
   padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 0.8rem; /* Tombol lebih kecil */
+  font-size: 0.8rem;
   transition: background-color 0.3s;
 }
 
@@ -143,7 +160,7 @@ table button:hover {
 .dashboard h2 {
   margin-bottom: 0.8rem;
   color: #81d4fa;
-  font-size: 1.2rem; /* Judul lebih kecil */
+  font-size: 1.2rem;
 }
 
 .dashboard-row {
@@ -156,7 +173,7 @@ table button:hover {
 
 .dashboard-row p {
   margin: 0;
-  font-size: 0.85rem; /* Font lebih kecil */
+  font-size: 0.85rem;
   flex: 1;
   min-width: 100px;
 }
