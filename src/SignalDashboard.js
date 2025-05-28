@@ -17,7 +17,8 @@ const SignalDashboard = ({
   adx,
   atrPct,
   kalman,
-  close
+  close,
+  groqAnalysis,
 }) => {
   // Logika sinyal sesuai PineScript
   const emaCrossUp = ema20Prev < ema50Prev && ema20 > ema50;
@@ -55,7 +56,7 @@ const SignalDashboard = ({
       <div className="dashboard-row">
         <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
         <p><strong>EMA Trend:</strong> {trend}</p>
-        <p><strong>RSI:</strong> {rsi ? rsi.toFixed(0) : 'N/A'}</p>
+        <p><strong>RSI:</strong> {rsi  {rsi ? rsi.toFixed(0) : 'N/A'}</p>
       </div>
       <div className="dashboard-row">
         <p><strong>MACD:</strong> {macdTrend}</p>
@@ -69,6 +70,10 @@ const SignalDashboard = ({
       </div>
       <div className="dashboard-row">
         <p><strong>4H MACD:</strong> {macd4HTrend}</p>
+      </div>
+      <div className="groq-analysis">
+        <strong>Analisis Groq:</strong>
+        <p>{groqAnalysis || 'Memuat analisis...'}</p>
       </div>
     </div>
   );
