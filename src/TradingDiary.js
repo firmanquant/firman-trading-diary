@@ -117,8 +117,6 @@ const TradingDiary = () => {
         </tbody>
       </table>
             
-<TVChart symbol="IDX:BBCA" />
-            
 <SignalDashboard
   ema20={ema20}
   ema50={ema50}
@@ -133,6 +131,9 @@ const TradingDiary = () => {
   kalman={kalman}
   close={currentClose}
 />
+            
+<TVChart symbol="IDX:BBCA" />
+            
     </div>
   );
 };
