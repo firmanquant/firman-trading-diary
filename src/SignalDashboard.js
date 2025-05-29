@@ -56,7 +56,7 @@ const SignalDashboard = ({
       <div className="dashboard-row">
         <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
         <p><strong>EMA Trend:</strong> {trend}</p>
-        <p><strong>RSI:</strong> {rsi  {rsi ? rsi.toFixed(0) : 'N/A'}</p>
+        <p><strong>RSI:</strong> {rsi ? rsi.toFixed(0) : 'N/A'}</p>
       </div>
       <div className="dashboard-row">
         <p><strong>MACD:</strong> {macdTrend}</p>
