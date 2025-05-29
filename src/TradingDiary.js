@@ -499,13 +499,13 @@ const TradingDiary = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        const response = await fetch('/api/groq', {
+          const response = await fetch('/api/groq', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
+  body: JSON.stringify(data)
+});
   body: JSON.stringify({ prompt }),
 });
       });
