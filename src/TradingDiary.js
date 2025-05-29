@@ -695,7 +695,7 @@ export default TradingDiary;
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-      return (
+return (
   <>
     <div className="summary-dashboard-container">
       <div className="summary-card">
