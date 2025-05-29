@@ -750,9 +750,11 @@ const TradingDiary = () => {
                     type="date"
                     value={input.date}
                     onChange={handleChange}
+                    placeholder="Date"
                 />
                 <input
                     name="ticker"
+                    type="text"
                     placeholder="Ticker"
                     value={input.ticker}
                     onChange={handleChange}
@@ -766,12 +768,14 @@ const TradingDiary = () => {
                 />
                 <input
                     name="reason"
+                    type="text"
                     placeholder="Alasan Setup"
                     value={input.reason}
                     onChange={handleChange}
                 />
                 <input
                     name="emotion"
+                    type="text"
                     placeholder="Catatan Emosi"
                     value={input.emotion}
                     onChange={handleChange}
@@ -787,7 +791,7 @@ const TradingDiary = () => {
                 <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
             </div>
 
-            {/* Tabel untuk menampilkan entries (opsional, bisa diperluas) */}
+            {/* Tabel untuk menampilkan entries */}
             <div className="entries-table">
                 <h2>Entries</h2>
                 <table>
