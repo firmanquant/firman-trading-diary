@@ -495,23 +495,29 @@ const TradingDiary = () => {
     console.log('Prompt sent to Groq:', prompt);
 
     try {
-      const response = await fetch('/api/groq', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
+  const response = await fetch('/api/groq', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prompt })
+  });
 
-      console.log('Groq API response status:', response.status);
+  console.log('Groq API response status:', response.status);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Groq API error response:', errorText);
-        setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${errorText}`);
-        return;
-      }
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Groq API error response:', errorText);
+    setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${errorText}`);
+    return;
+  }
+
+  const data = await response.json();
+  setGroqAnalysis(data.response || 'Tidak ada analisis dari Groq.');
+} catch (error) {
+  console.error('Error calling Groq API:', error.message);
+  setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${error.message}`);
+}}
 
       const data = await response.json();
       console.log('Groq API response data:', data);
