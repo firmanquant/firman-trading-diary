@@ -1,3 +1,5 @@
+// File: src/SignalDashboard.js
+
 import React from 'react';
 
 const SignalDashboard = ({
@@ -20,7 +22,7 @@ const SignalDashboard = ({
   close,
   groqAnalysis,
 }) => {
-  // Logika sinyal sesuai PineScript
+  // Logic sinyal
   const emaCrossUp = ema20Prev < ema50Prev && ema20 > ema50;
   const emaCrossDown = ema20Prev > ema50Prev && ema20 < ema50;
 
@@ -53,24 +55,29 @@ const SignalDashboard = ({
   return (
     <div className="dashboard">
       <h2>📊 Dashboard Mini</h2>
+
       <div className="dashboard-row">
         <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
         <p><strong>EMA Trend:</strong> {trend}</p>
-        <p><strong>RSI:</strong> {rsi ? rsi.toFixed(0) : 'N/A'}</p>
+        <p><strong>RSI:</strong> {rsi !== undefined ? rsi.toFixed(0) : 'N/A'}</p>
       </div>
+
       <div className="dashboard-row">
         <p><strong>MACD:</strong> {macdTrend}</p>
         <p><strong>DI+/DI-:</strong> {diTrend}</p>
         <p><strong>Trend 1W:</strong> {trend1W}</p>
       </div>
+
       <div className="dashboard-row">
-        <p><strong>ADX:</strong> {adx ? adx.toFixed(2) : 'N/A'}</p>
-        <p><strong>ATR:</strong> {atrPct ? `${atrPct.toFixed(2)}% ${atrStatus}` : 'N/A'}</p>
+        <p><strong>ADX:</strong> {adx !== undefined ? adx.toFixed(2) : 'N/A'}</p>
+        <p><strong>ATR:</strong> {atrPct !== undefined ? `${atrPct.toFixed(2)}% ${atrStatus}` : 'N/A'}</p>
         <p><strong>Kalman Diff:</strong> {kalmanDiff}</p>
       </div>
+
       <div className="dashboard-row">
         <p><strong>4H MACD:</strong> {macd4HTrend}</p>
       </div>
+
       <div className="groq-analysis">
         <strong>Analisis Groq:</strong>
         <p>{groqAnalysis || 'Memuat analisis...'}</p>
