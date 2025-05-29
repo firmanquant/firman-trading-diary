@@ -696,15 +696,15 @@ export default TradingDiary;
       </div>
 
 return (
-  <>
-    <div className="summary-dashboard-container">
-      <div className="summary-card">
-        <h2>📊 Ringkasan Performa</h2>
-        <p>Total Trade: {totalTrades}</p>
-        <p>Win Rate: {totalTrades ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
-        <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
+    <>
+      <div className="summary-dashboard-container">
+        <div className="summary-card">
+          <h2>📊 Ringkasan Performa</h2>
+          <p>Total Trade: {totalTrades}</p>
+          <p>Win Rate: {winRate}%</p>
+          <p>Total Gain/Loss: {totalProfit.toFixed(2)}</p>
+        </div>
       </div>
-    </div>
 
     {indicators ? (
       <SignalDashboard
