@@ -1,11 +1,11 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { prompt } = req.body;
 
-  if (!prompt || typeof prompt !== 'string') {
+  if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
 
@@ -13,25 +13,21 @@ export default async function handler(req, res) {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`, // <- ENV var diatur di Vercel Dashboard
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'mixtral-8x7b-32768',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7
-      }),
+      })
     });
 
     const data = await groqRes.json();
+    const response = data?.choices?.[0]?.message?.content;
 
-    const text =
-      data.choices?.[0]?.message?.content?.trim() ||
-      'Tidak ada hasil analisis dari model.';
-
-    res.status(200).json({ response: text });
+    res.status(200).json({ response });
   } catch (err) {
-    console.error('GROQ API error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch from Groq' });
   }
 }
