@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Pastikan file FirmanQuantStrategy.js ada di folder src/ dan diekspor dengan benar
-import { FirmanQuantStrategy } from './FirmanQuantStrategy';
+// Impor FirmanQuantStrategy dari SignalDashboard.js
+import { FirmanQuantStrategy } from './SignalDashboard';
 
 // Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
