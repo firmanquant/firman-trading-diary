@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-// Impor FirmanQuantStrategy dari SignalDashboard.js
-import { FirmanQuantStrategy } from './SignalDashboard';
+import SignalDashboard from './SignalDashboard';
 
 // Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
@@ -22,7 +20,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
       style: "1",
       locale: "id",
       autosize: true,
-      container_id: "tradingview-chart"
+      container_id: "tv_chart_container"
     };
 
     widgetRef.current = new window.TradingView.widget(widgetOptions);
@@ -56,7 +54,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     };
   }, []);
 
-  return <div id="tradingview-chart" ref={containerRef} style={{ height: "350px" }} />;
+  return <div id="tv_chart_container" ref={containerRef} style={{ height: "350px" }} />;
 };
 
 const TradingDiary = () => {
@@ -82,40 +80,47 @@ const TradingDiary = () => {
   const [ticker, setTicker] = useState('BBCA');
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
-  const strategyRef = useRef(null);
+  const [indicators, setIndicators] = useState({
+    ema20: null,
+    ema50: null,
+    ema20Prev: null,
+    ema50Prev: null,
+    ema20_1W: null,
+    ema50_1W: null,
+    rsi: null,
+    macdLine: null,
+    signalLine: null,
+    macdLine_4H: null,
+    signalLine_4H: null,
+    plusDI: null,
+    minusDI: null,
+    adx: null,
+    atrPct: null,
+    kalman: null,
+    close: null
+  });
 
-  // Inisialisasi strategi
-  useEffect(() => {
-    const strategyParams = {
-      ema20Len: 20,
-      ema50Len: 50,
-      sma20Len: 20,
-      sma50Len: 50,
-      enableKalman: true,
-      kalmanLen: 20,
-      kalmanGain: 0.5,
-      dmiLen: 14,
-      adxSmooth: 14,
-      macdFast: 12,
-      macdSlow: 26,
-      macdSignal: 9,
-      rsiLen: 14,
-      liquidityLookback: 50,
-      volumeThreshold: 1.5
-    };
-
-    strategyRef.current = new FirmanQuantStrategy(strategyParams);
-  }, []);
-
-  // Simulasi analisis AI
+  // Fetch analisis Grok
   const fetchGroqAnalysis = async () => {
     try {
-      const fakeAnalysis = `Analisis teknis ${ticker}: Tren bullish terdeteksi. 
-      Rekomendasi: Akumulasi pada area support. Target harga +5% dari level saat ini.`;
-      
-      setGroqAnalysis(fakeAnalysis);
+      const response = await fetch('/api/groq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: `Berikan analisis teknikal untuk saham ${ticker} di pasar IDX.`
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setGroqAnalysis(data.response);
+      } else {
+        setGroqAnalysis('Gagal memuat analisis: ' + (data.message || 'Unknown error'));
+      }
     } catch (error) {
-      setGroqAnalysis(`Gagal memuat analisis: ${error.message}`);
+      setGroqAnalysis('Gagal memuat analisis: ' + error.message);
     }
   };
 
@@ -163,18 +168,30 @@ const TradingDiary = () => {
     };
 
     setEntries(prev => [...prev, newEntry]);
-    
-    // Proses data dengan strategi
-    if (strategyRef.current) {
-      strategyRef.current.processNewData({
-        open: Number(form.entry),
-        high: Number(form.entry) * 1.01,
-        low: Number(form.entry) * 0.99,
-        close: Number(form.exit),
-        volume: 1000000,
-        timestamp: Date.now()
-      });
-    }
+
+    // Update indikator dengan data baru
+    setIndicators(prev => ({
+      ...prev,
+      close: Number(form.exit),
+      // Simulasi data lain untuk SignalDashboard
+      // Dalam aplikasi nyata, data ini harus diambil dari FirmanQuantStrategy
+      ema20: Number(form.exit) * 1.02, // Contoh
+      ema50: Number(form.exit) * 1.01, // Contoh
+      ema20Prev: prev.ema20 || Number(form.exit) * 1.02,
+      ema50Prev: prev.ema50 || Number(form.exit) * 1.01,
+      ema20_1W: Number(form.exit) * 1.03, // Contoh
+      ema50_1W: Number(form.exit) * 1.02, // Contoh
+      rsi: 69, // Contoh
+      macdLine: 0.5, // Contoh
+      signalLine: 0.3, // Contoh
+      macdLine_4H: 0.4, // Contoh
+      signalLine_4H: 0.2, // Contoh
+      plusDI: 25, // Contoh
+      minusDI: 15, // Contoh
+      adx: 76.01, // Contoh
+      atrPct: 2.0, // Contoh
+      kalman: Number(form.exit) * 0.99 // Contoh
+    }));
 
     setForm({
       date: '',
@@ -217,23 +234,17 @@ const TradingDiary = () => {
   const { totalTrades, winRate, totalGainLoss } = calculateStats();
 
   return (
-    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center' }}>Firman Trading Diary</h1>
+    <div className="container">
+      <h1>Firman Trading Diary</h1>
 
       {/* Form Input */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: '10px',
-        marginBottom: '20px'
-      }}>
+      <div className="form">
         <input
           name="date"
           type="date"
           value={form.date}
           onChange={handleChange}
           required
-          style={{ padding: '8px' }}
         />
         <input
           name="ticker"
@@ -241,7 +252,6 @@ const TradingDiary = () => {
           value={form.ticker}
           onChange={handleChange}
           required
-          style={{ padding: '8px' }}
         />
         <input
           name="entry"
@@ -252,7 +262,6 @@ const TradingDiary = () => {
           required
           step="0.01"
           min="0"
-          style={{ padding: '8px' }}
         />
         <input
           name="exit"
@@ -263,128 +272,97 @@ const TradingDiary = () => {
           required
           step="0.01"
           min="0"
-          style={{ padding: '8px' }}
         />
         <input
           name="reason"
           placeholder="Alasan Setup"
           value={form.reason}
           onChange={handleChange}
-          style={{ padding: '8px' }}
         />
         <input
           name="emotion"
           placeholder="Catatan Emosi"
           value={form.emotion}
           onChange={handleChange}
-          style={{ padding: '8px' }}
         />
-        <button 
-          onClick={handleAdd}
-          style={{ 
-            gridColumn: '1 / -1',
-            padding: '10px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          + Tambah Entry
-        </button>
+        <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
       {/* TradingView Chart */}
       <TVChart symbol={`IDX:${ticker}`} />
 
-      {/* Ringkasan Performa */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        margin: '20px 0',
-        padding: '15px',
-        backgroundColor: '#f0f0f0',
-        borderRadius: '8px'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <h3>Total Trade</h3>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{totalTrades}</p>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <h3>Win Rate</h3>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{winRate.toFixed(1)}%</p>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <h3>Gain/Loss</h3>
-          <p style={{ 
-            fontSize: '24px', 
-            fontWeight: 'bold',
-            color: totalGainLoss >= 0 ? 'green' : 'red'
-          }}>
-            {totalGainLoss >= 0 ? '+' : ''}{totalGainLoss.toFixed(2)}
+      {/* Ringkasan Performa dan Dashboard */}
+      <div className="summary-dashboard-container">
+        <div className="summary-card">
+          <h2>📈 Ringkasan Performa</h2>
+          <p><strong>Total Trade:</strong> {totalTrades}</p>
+          <p><strong>Win Rate:</strong> {winRate.toFixed(1)}%</p>
+          <p>
+            <strong>Gain/Loss:</strong> 
+            <span style={{ color: totalGainLoss >= 0 ? 'green' : 'red' }}>
+              {totalGainLoss >= 0 ? '+' : ''}{totalGainLoss.toFixed(2)}
+            </span>
           </p>
         </div>
+        <SignalDashboard
+          ema20={indicators.ema20}
+          ema50={indicators.ema50}
+          ema20Prev={indicators.ema20Prev}
+          ema50Prev={indicators.ema50Prev}
+          ema20_1W={indicators.ema20_1W}
+          ema50_1W={indicators.ema50_1W}
+          rsi={indicators.rsi}
+          macdLine={indicators.macdLine}
+          signalLine={indicators.signalLine}
+          macdLine_4H={indicators.macdLine_4H}
+          signalLine_4H={indicators.signalLine_4H}
+          plusDI={indicators.plusDI}
+          minusDI={indicators.minusDI}
+          adx={indicators.adx}
+          atrPct={indicators.atrPct}
+          kalman={indicators.kalman}
+          close={indicators.close}
+          groqAnalysis={groqAnalysis}
+        />
       </div>
 
       {/* Toggle Tabel */}
       <button 
+        className="toggle-table-btn"
         onClick={() => setShowTable(prev => !prev)}
-        style={{
-          padding: '10px',
-          backgroundColor: '#007bff',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          marginBottom: '20px'
-        }}
       >
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
       </button>
 
       {/* Tabel Entri */}
       {showTable && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+        <table>
           <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Tanggal</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Ticker</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Entry</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Exit</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Profit</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Alasan</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Emosi</th>
-              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Aksi</th>
+            <tr>
+              <th>Tanggal</th>
+              <th>Ticker</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>Profit</th>
+              <th>Alasan</th>
+              <th>Emosi</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry, index) => (
               <tr key={index}>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.date}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.ticker}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.entry.toFixed(2)}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.exit.toFixed(2)}</td>
-                <td style={{ 
-                  padding: '10px', 
-                  border: '1px solid #ddd',
-                  color: (entry.exit - entry.entry) >= 0 ? 'green' : 'red'
-                }}>
+                <td>{entry.date}</td>
+                <td>{entry.ticker}</td>
+                <td>{entry.entry.toFixed(2)}</td>
+                <td>{entry.exit.toFixed(2)}</td>
+                <td style={{ color: (entry.exit - entry.entry) >= 0 ? 'green' : 'red' }}>
                   {(entry.exit - entry.entry).toFixed(2)}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.reason}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.emotion}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                  <button 
-                    onClick={() => handleDelete(index)}
-                    style={{ 
-                      padding: '5px 10px',
-                      backgroundColor: '#ff4444',
-                      color: 'white',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Hapus
-                  </button>
+                <td>{entry.reason}</td>
+                <td>{entry.emotion}</td>
+                <td>
+                  <button onClick={() => handleDelete(index)}>Hapus</button>
                 </td>
               </tr>
             ))}
