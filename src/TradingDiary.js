@@ -60,7 +60,7 @@ const TradingDiary = () => {
     console.log('Initial entries from localStorage:', savedEntries);
     return savedEntries ? JSON.parse(savedEntries) : [];
   });
-  
+
   const [form, setForm] = useState({
     date: '',
     ticker: '',
@@ -69,7 +69,7 @@ const TradingDiary = () => {
     reason: '',
     emotion: ''
   });
-  
+
   const [ticker, setTicker] = useState('BBCA');
   const [strategy, setStrategy] = useState(null);
   const [indicators, setIndicators] = useState(null);
@@ -117,23 +117,23 @@ const TradingDiary = () => {
       entry: parseFloat(form.entry),
       exit: parseFloat(form.exit),
     };
-    
+
     setEntries(prevEntries => {
       const updatedEntries = [...prevEntries, newEntry];
       console.log('New entry added:', newEntry);
       console.log('Updated entries:', updatedEntries);
       return updatedEntries;
     });
-    
-    setForm({ 
-      date: '', 
-      ticker: '', 
-      entry: '', 
-      exit: '', 
-      reason: '', 
-      emotion: '' 
+
+    setForm({
+      date: '',
+      ticker: '',
+      entry: '',
+      exit: '',
+      reason: '',
+      emotion: ''
     });
-    
+
     alert('Entri berhasil ditambahkan!');
   };
 
@@ -161,7 +161,7 @@ const TradingDiary = () => {
   const totalTrades = entries.length;
   const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
   const totalGainLoss = entries.reduce(
-    (sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0, 
+    (sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0),
     0
   );
 
@@ -179,44 +179,44 @@ const TradingDiary = () => {
       <h1>Firman Trading Diary</h1>
 
       <div className="form">
-        <input 
-          name="date" 
-          type="date" 
-          value={form.date} 
-          onChange={handleChange} 
-          placeholder="Tanggal" 
+        <input
+          name="date"
+          type="date"
+          value={form.date}
+          onChange={handleChange}
+          placeholder="Tanggal"
         />
-        <input 
-          name="ticker" 
-          placeholder="Ticker (contoh: BBCA)" 
-          value={form.ticker} 
-          onChange={handleChange} 
+        <input
+          name="ticker"
+          placeholder="Ticker (contoh: BBCA)"
+          value={form.ticker}
+          onChange={handleChange}
         />
-        <input 
-          name="entry" 
-          type="number" 
-          placeholder="Entry Price" 
-          value={form.entry} 
-          onChange={handleChange} 
+        <input
+          name="entry"
+          type="number"
+          placeholder="Entry Price"
+          value={form.entry}
+          onChange={handleChange}
         />
-        <input 
-          name="exit" 
-          type="number" 
-          placeholder="Exit Price" 
-          value={form.exit} 
-          onChange={handleChange} 
+        <input
+          name="exit"
+          type="number"
+          placeholder="Exit Price"
+          value={form.exit}
+          onChange={handleChange}
         />
-        <input 
-          name="reason" 
-          placeholder="Alasan Setup" 
-          value={form.reason} 
-          onChange={handleChange} 
+        <input
+          name="reason"
+          placeholder="Alasan Setup"
+          value={form.reason}
+          onChange={handleChange}
         />
-        <input 
-          name="emotion" 
-          placeholder="Catatan Emosi" 
-          value={form.emotion} 
-          onChange={handleChange} 
+        <input
+          name="emotion"
+          placeholder="Catatan Emosi"
+          value={form.emotion}
+          onChange={handleChange}
         />
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
