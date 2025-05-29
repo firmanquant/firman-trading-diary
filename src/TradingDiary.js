@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
 
-// Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
   const containerRef = useRef(null);
   const widgetRef = useRef(null);
@@ -13,7 +12,6 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     if (!container || !window.TradingView) return;
 
     container.innerHTML = '';
-
     const widgetOptions = {
       symbol,
       interval: 'D',
@@ -28,7 +26,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     widgetRef.current = new window.TradingView.widget(widgetOptions);
 
     return () => {
-      if (widgetRef.current?.remove) {
+      if (widgetRef.current && typeof widgetRef.current.remove === 'function') {
         widgetRef.current.remove();
       }
     };
@@ -42,19 +40,20 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     script.src = 'https://s3.tradingview.com/tv.js';
     script.async = true;
     script.id = 'tradingview-script';
-
     script.onload = () => console.log('TradingView script loaded');
     script.onerror = () => console.error('Failed to load TradingView script');
 
     document.head.appendChild(script);
 
     return () => {
-      const existing = document.getElementById('tradingview-script');
-      if (existing) document.head.removeChild(existing);
+      const existingScript = document.getElementById('tradingview-script');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
     };
   }, []);
 
-  return <div id="tradingview-chart" ref={containerRef} style={{ height: 350 }} />;
+  return <div id="tradingview-chart" ref={containerRef} style={{ height: '320px' }} />;
 };
 
 const TradingDiary = () => {
@@ -67,15 +66,7 @@ const TradingDiary = () => {
     }
   });
 
-  const [form, setForm] = useState({
-    date: '',
-    ticker: '',
-    entry: '',
-    exit: '',
-    reason: '',
-    emotion: '',
-  });
-
+  const [form, setForm] = useState({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   const [ticker, setTicker] = useState('BBCA');
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
@@ -87,10 +78,9 @@ const TradingDiary = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `Analisis teknikal saham ${ticker}` }),
       });
-
       const data = await res.json();
       setGroqAnalysis(data.response || 'Tidak ada respon.');
-    } catch (error) {
+    } catch (e) {
       setGroqAnalysis('Gagal memuat analisis.');
     }
   };
@@ -103,71 +93,45 @@ const TradingDiary = () => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [name]: value }));
     if (name === 'ticker') setTicker(value.toUpperCase());
   };
 
   const handleAdd = () => {
     const { date, ticker, entry, exit } = form;
+    if (!date || !ticker || !entry || !exit) return alert('Lengkapi semua kolom wajib.');
     const entryNum = parseFloat(entry);
     const exitNum = parseFloat(exit);
+    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0) return alert('Entry dan Exit harus angka positif.');
 
-    if (!date || !ticker || !entry || !exit) {
-      alert('Isi semua kolom wajib!');
-      return;
-    }
-
-    if (isNaN(entryNum) || isNaN(exitNum) || entryNum <= 0 || exitNum <= 0) {
-      alert('Entry dan Exit harus angka positif.');
-      return;
-    }
-
-    const newEntry = {
-      ...form,
-      entry: entryNum,
-      exit: exitNum,
-    };
-
-    setEntries((prev) => [...prev, newEntry]);
-
-    setForm({
-      date: '',
-      ticker: '',
-      entry: '',
-      exit: '',
-      reason: '',
-      emotion: '',
-    });
+    setEntries(prev => [...prev, { ...form, entry: entryNum, exit: exitNum }]);
+    setForm({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   };
 
-  const handleDelete = (index) => {
-    if (window.confirm('Hapus entri ini?')) {
-      setEntries((prev) => prev.filter((_, i) => i !== index));
+  const handleDelete = idx => {
+    if (window.confirm('Yakin hapus entri ini?')) {
+      setEntries(prev => prev.filter((_, i) => i !== idx));
     }
   };
 
-  const stats = entries.reduce(
-    (acc, e) => {
-      const profit = e.exit - e.entry;
-      acc.total += 1;
-      acc.gain += profit;
-      if (profit > 0) acc.wins += 1;
-      return acc;
-    },
-    { total: 0, gain: 0, wins: 0 }
-  );
+  const stats = entries.reduce((acc, e) => {
+    const gain = e.exit - e.entry;
+    acc.total += 1;
+    acc.gain += gain;
+    if (gain > 0) acc.wins += 1;
+    return acc;
+  }, { total: 0, gain: 0, wins: 0 });
 
-  const winRate = stats.total ? ((stats.wins / stats.total) * 100).toFixed(1) : '0.0';
+  const winRate = stats.total ? (stats.wins / stats.total) * 100 : 0;
 
   return (
     <div className="container">
-      <h1>Firman Trading Diary</h1>
-
+      <h1 style={{ textAlign: 'center', fontSize: '1.4rem', marginBottom: '10px' }}>Firman Trading Diary</h1>
       <div className="form">
         <input type="date" name="date" value={form.date} onChange={handleChange} />
-        <input name="ticker" placeholder="Ticker (contoh: BBCA)" value={form.ticker} onChange={handleChange} />
+        <input name="ticker" placeholder="Ticker (ex: BBCA)" value={form.ticker} onChange={handleChange} />
         <input name="entry" type="number" placeholder="Entry Price" value={form.entry} onChange={handleChange} />
         <input name="exit" type="number" placeholder="Exit Price" value={form.exit} onChange={handleChange} />
         <input name="reason" placeholder="Alasan Setup" value={form.reason} onChange={handleChange} />
@@ -184,18 +148,15 @@ const TradingDiary = () => {
         </div>
         <div className="summary-card">
           <h2>Win Rate</h2>
-          <p>{winRate}%</p>
+          <p>{winRate.toFixed(1)}%</p>
         </div>
         <div className="summary-card">
           <h2>Gain/Loss</h2>
-          <p style={{ color: stats.gain >= 0 ? 'green' : 'red' }}>
-            {stats.gain >= 0 ? '+' : ''}
-            {stats.gain.toFixed(2)}
-          </p>
+          <p style={{ color: stats.gain >= 0 ? 'green' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p>
         </div>
       </div>
 
-      <button className="toggle-table-btn" onClick={() => setShowTable((p) => !p)}>
+      <button className="toggle-table-btn" onClick={() => setShowTable(p => !p)}>
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
       </button>
 
@@ -220,14 +181,10 @@ const TradingDiary = () => {
                 <td>{e.ticker}</td>
                 <td>{e.entry.toFixed(2)}</td>
                 <td>{e.exit.toFixed(2)}</td>
-                <td style={{ color: e.exit - e.entry >= 0 ? 'green' : 'red' }}>
-                  {(e.exit - e.entry).toFixed(2)}
-                </td>
+                <td style={{ color: e.exit - e.entry >= 0 ? 'green' : 'red' }}>{(e.exit - e.entry).toFixed(2)}</td>
                 <td>{e.reason}</td>
                 <td>{e.emotion}</td>
-                <td>
-                  <button onClick={() => handleDelete(i)}>Hapus</button>
-                </td>
+                <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
               </tr>
             ))}
           </tbody>
@@ -235,23 +192,10 @@ const TradingDiary = () => {
       )}
 
       <SignalDashboard
-        ema20={50}
-        ema50={45}
-        ema20Prev={48}
-        ema50Prev={46}
-        ema20_1W={49}
-        ema50_1W={47}
-        rsi={69}
-        macdLine={1.5}
-        signalLine={1.9}
-        macdLine_4H={-0.2}
-        signalLine_4H={0.1}
-        plusDI={30}
-        minusDI={25}
-        adx={76.01}
-        atrPct={0.67}
-        kalman={72.52}
-        close={100}
+        ema20={50} ema50={45} ema20Prev={48} ema50Prev={46}
+        ema20_1W={49} ema50_1W={47} rsi={69} macdLine={-0.1} signalLine={0.1}
+        macdLine_4H={-0.2} signalLine_4H={0.3} plusDI={27} minusDI={12}
+        adx={76.01} atrPct={0.67} kalman={99.5} close={127.2}
         groqAnalysis={groqAnalysis}
       />
     </div>
