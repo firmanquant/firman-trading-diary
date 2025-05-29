@@ -695,96 +695,128 @@ export default TradingDiary;
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-return (
-    <>
-      <div className="summary-dashboard-container">
-        <div className="summary-card">
-          <h2>📊 Ringkasan Performa</h2>
-          <p>Total Trade: {totalTrades}</p>
-          <p>Win Rate: {winRate}%</p>
-          <p>Total Gain/Loss: {totalProfit.toFixed(2)}</p>
+import React, { useState } from 'react';
+
+const TradingDiary = () => {
+    // State untuk menyimpan input form
+    const [input, setInput] = useState({
+        date: "",
+        ticker: "",
+        entry: "",
+        reason: "",
+        emotion: "",
+    });
+
+    // State untuk menyimpan daftar entries
+    const [entries, setEntries] = useState([]);
+
+    // Fungsi untuk menangani perubahan input
+    const handleChange = (e) => {
+        setInput({ ...input, [e.target.name]: e.target.value });
+    };
+
+    // Fungsi untuk menambah entry baru
+    const handleAdd = () => {
+        const newEntry = {
+            ...input,
+            entry: parseFloat(input.entry) || 0, // Pastikan entry adalah number
+            profit: 0, // Placeholder untuk profit (bisa ditambahkan logika lebih lanjut)
+        };
+        setEntries([...entries, newEntry]);
+        // Reset form setelah menambah entry
+        setInput({
+            date: "",
+            ticker: "",
+            entry: "",
+            reason: "",
+            emotion: "",
+        });
+    };
+
+    // Hitung statistik untuk summary
+    const totalTrades = entries.length;
+    const winningTrades = entries.filter(entry => entry.profit > 0).length;
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100).toFixed(2) : 0;
+    const totalGainLoss = entries.reduce((sum, entry) => sum + entry.profit, 0);
+
+    return (
+        <div className="container">
+            <h1>Firman Trading Diary</h1>
+
+            {/* Form untuk menambah entry */}
+            <div className="form">
+                <input
+                    name="date"
+                    type="date"
+                    value={input.date}
+                    onChange={handleChange}
+                />
+                <input
+                    name="ticker"
+                    placeholder="Ticker"
+                    value={input.ticker}
+                    onChange={handleChange}
+                />
+                <input
+                    name="entry"
+                    type="number"
+                    placeholder="Entry"
+                    value={input.entry}
+                    onChange={handleChange}
+                />
+                <input
+                    name="reason"
+                    placeholder="Alasan Setup"
+                    value={input.reason}
+                    onChange={handleChange}
+                />
+                <input
+                    name="emotion"
+                    placeholder="Catatan Emosi"
+                    value={input.emotion}
+                    onChange={handleChange}
+                />
+                <button onClick={handleAdd}>Tambah Entry</button>
+            </div>
+
+            {/* Summary Dashboard */}
+            <div className="summary-dashboard-container">
+                <h2>Ringkasan Performa</h2>
+                <p>Total Trade: {totalTrades}</p>
+                <p>Win Rate: {winRate}%</p>
+                <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
+            </div>
+
+            {/* Tabel untuk menampilkan entries (opsional, bisa diperluas) */}
+            <div className="entries-table">
+                <h2>Entries</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ticker</th>
+                            <th>Entry</th>
+                            <th>Reason</th>
+                            <th>Emotion</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {entries.map((entry, index) => (
+                            <tr key={index}>
+                                <td>{entry.date}</td>
+                                <td>{entry.ticker}</td>
+                                <td>{entry.entry}</td>
+                                <td>{entry.reason}</td>
+                                <td>{entry.emotion}</td>
+                                <td>{entry.profit.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
-
-    {indicators ? (
-      <SignalDashboard
-        ema20={indicators.ema20}
-        ema50={indicators.ema50}
-        ema20Prev={indicators.ema20Prev}
-        ema50Prev={indicators.ema50Prev}
-        ema20_1W={indicators.ema20_1W}
-        ema50_1W={indicators.ema50_1W}
-        rsi={indicators.rsi}
-        macdLine={indicators.macdLine}
-        signalLine={indicators.signalLine}
-        macdLine_4H={indicators.macdLine_4H}
-        signalLine_4H={indicators.signalLine_4H}
-        plusDI={indicators.plusDI}
-        minusDI={indicators.minusDI}
-        adx={indicators.adx}
-        atrPct={indicators.atrPct}
-        kalman={indicators.kalman}
-        close={indicators.close}
-        groqAnalysis={groqAnalysis}
-      />
-    ) : (
-      <p>Loading indicators...</p>
-    )}
-  </>
-);
-
-      {entries.length > 0 && (
-        <button className="toggle-table-btn" onClick={toggleTable}>
-          {showTable ? 'Sembunyikan Hasil' : 'Lihat Hasil'}
-        </button>
-      )}
-
-      {entries.length > 0 && showTable ? (
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Ticker</th>
-              <th>Entry</th>
-              <th>Exit</th>
-              <th>Hasil</th>
-              <th>% Gain</th>
-              <th>Alasan</th>
-              <th>Emosi</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.length > 0 ? (
-              entries.map((e, i) => (
-                <tr key={i}>
-                  <td>{e.date}</td>
-                  <td>{e.ticker}</td>
-                  <td>{e.entry}</td>
-                  <td>{e.exit}</td>
-                  <td>{calcResult(e.entry, e.exit)}</td>
-                  <td>{calcGain(e.entry, e.exit)}%</td>
-                  <td>{e.reason || 'N/A'}</td>
-                  <td>{e.emotion || 'N/A'}</td>
-                  <td>
-                    <button onClick={() => handleDelete(i)}>Hapus</button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="9">Tidak ada data entri.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      ) : entries.length === 0 && showTable ? (
-        <p>Tidak ada data entri untuk ditampilkan.</p>
-      ) : null}
-
-      <TVChart symbol={`IDX:${ticker}`} />
-    </div>
-  );
+    );
 };
 
 export default TradingDiary;
