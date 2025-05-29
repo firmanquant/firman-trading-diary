@@ -18,7 +18,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
       style: "1",
       locale: "id",
       autosize: true,
-      container
+      container_id: container.id
     };
 
     const widget = new window.TradingView.widget(widgetOptions);
