@@ -1,63 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import SignalDashboard from './SignalDashboard';
+import React, { useState, useEffect, useRef } from 'react';
 
-// Komponen TradingView Chart
+// Komponen TradingView Chart (Diperbaiki dengan cleanup)
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
+  const containerRef = useRef(null);
+
   useEffect(() => {
-    const container = document.getElementById("tv_chart_container");
-    if (!container) return;
+    const container = containerRef.current;
+    if (!container || !window.TradingView) return;
 
     container.innerHTML = ""; // Reset chart
 
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/tv.js";
-    script.async = true;
-    script.onload = () => {
-      if (window.TradingView) {
-        new window.TradingView.widget({
-          container_id: "tv_chart_container",
-          symbol,
-          interval: "D",
-          timezone: "Asia/Jakarta",
-          theme: "dark",
-          style: "1",
-          locale: "id",
-          autosize: true,
-        });
-      } else {
-        console.error("TradingView widget failed to load.");
+    const widgetOptions = {
+      symbol,
+      interval: "D",
+      timezone: "Asia/Jakarta",
+      theme: "dark",
+      style: "1",
+      locale: "id",
+      autosize: true,
+      container
+    };
+
+    const widget = new window.TradingView.widget(widgetOptions);
+
+    return () => {
+      // Cleanup widget saat komponen di-unmount
+      if (widget && typeof widget.remove === 'function') {
+        widget.remove();
       }
     };
-
-    script.onerror = () => {
-      console.error("Failed to load TradingView script.");
-    };
-
-    container.appendChild(script);
   }, [symbol]);
 
-  return <div id="tv_chart_container" style={{ height: "350px" }} />;
-};
+  // Load script TradingView
+  useEffect(() => {
+    if (window.TradingView) return;
 
-// Kelas FirmanQuantStrategy
-class FirmanQuantStrategy {
-  // ... (tetap sama seperti sebelumnya)
-}
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js';
+    script.async = true;
+    script.id = 'tradingview-script';
+    
+    document.head.appendChild(script);
 
-// Fungsi untuk menghasilkan data historis simulasi dengan seed
-const simulateHistoricalData = (ticker, numBars = 50) => {
-  // ... (tetap sama seperti sebelumnya)
-};
+    return () => {
+      const existingScript = document.getElementById('tradingview-script');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
+  }, []);
 
-// Fungsi untuk menghitung ATR
-const calcATR = (data, length) => {
-  // ... (tetap sama seperti sebelumnya)
+  return <div ref={containerRef} style={{ height: "350px" }} />;
 };
 
 const TradingDiary = () => {
+  // State management
   const [entries, setEntries] = useState(() => {
-    const savedEntries = localStorage.getItem('tradingEntries');
-    return savedEntries ? JSON.parse(savedEntries) : [];
+    try {
+      const savedEntries = localStorage.getItem('tradingEntries');
+      return savedEntries ? JSON.parse(savedEntries) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [form, setForm] = useState({
@@ -70,54 +74,58 @@ const TradingDiary = () => {
   });
 
   const [ticker, setTicker] = useState('BBCA');
-  const [strategy, setStrategy] = useState(null);
-  const [indicators, setIndicators] = useState(null);
-  const [dailyData, setDailyData] = useState([]);
-  const [weeklyData, setWeeklyData] = useState([]);
-  const [fourHourData, setFourHourData] = useState([]);
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
 
+  // Simulasi analisis AI
   const fetchGroqAnalysis = async () => {
-    // ... (tetap sama seperti sebelumnya)
+    try {
+      // Implementasi sebenarnya menggunakan API
+      const fakeAnalysis = `Analisis teknis ${ticker}: Tren bullish terdeteksi. 
+      Rekomendasi: Akumulasi pada area support. Target harga +5% dari level saat ini.`;
+      
+      setGroqAnalysis(fakeAnalysis);
+    } catch (error) {
+      setGroqAnalysis(`Gagal memuat analisis: ${error.message}`);
+    }
   };
 
+  // Efek untuk analisis saham
   useEffect(() => {
-    // ... (tetap sama seperti sebelumnya)
-  }, [ticker]);
-
-  useEffect(() => {
-    if (indicators) {
+    if (ticker) {
       fetchGroqAnalysis();
     }
-  }, [indicators, ticker]);
+  }, [ticker]);
 
+  // Penyimpanan data ke localStorage
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
+  // Handler functions
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (name === 'ticker') {
-      setTicker(value.toUpperCase() || 'BBCA');
+    setForm(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'ticker' && value.trim()) {
+      setTicker(value.toUpperCase());
     }
   };
 
   const handleAdd = () => {
-    if (!form.date || !form.ticker || !form.entry || !form.exit) {
-      alert('Harap isi semua kolom wajib: Tanggal, Ticker, Entry Price, dan Exit Price.');
+    const { date, ticker, entry, exit } = form;
+    if (!date || !ticker || !entry || !exit) {
+      alert('Harap isi semua kolom wajib!');
       return;
     }
 
     const newEntry = {
       ...form,
-      entry: parseFloat(form.entry),
-      exit: parseFloat(form.exit),
+      entry: Number(parseFloat(entry).toFixed(2)),
+      exit: Number(parseFloat(exit).toFixed(2))
     };
 
-    setEntries(prevEntries => [...prevEntries, newEntry]);
-
+    setEntries(prev => [...prev, newEntry]);
     setForm({
       date: '',
       ticker: '',
@@ -126,55 +134,64 @@ const TradingDiary = () => {
       reason: '',
       emotion: ''
     });
-
-    alert('Entri berhasil ditambahkan!');
   };
 
   const handleDelete = (index) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus entri ini?')) {
-      setEntries(prevEntries => prevEntries.filter((_, i) => i !== index));
-      alert('Entri berhasil dihapus!');
+    if (window.confirm('Hapus entri ini?')) {
+      setEntries(prev => prev.filter((_, i) => i !== index));
     }
   };
 
-  const calcResult = (entry, exit) => {
-    if (isNaN(entry) || isNaN(exit)) return 'Data Tidak Valid';
-    return (exit - entry);
+  // Perhitungan statistik
+  const calculateStats = () => {
+    const stats = {
+      totalTrades: entries.length,
+      winningTrades: 0,
+      totalGainLoss: 0,
+      winRate: 0
+    };
+
+    entries.forEach(e => {
+      const result = e.exit - e.entry;
+      stats.totalGainLoss += result;
+      if (result > 0) stats.winningTrades++;
+    });
+
+    if (stats.totalTrades > 0) {
+      stats.winRate = (stats.winningTrades / stats.totalTrades) * 100;
+    }
+
+    return stats;
   };
 
-  const calcGain = (entry, exit) => {
-    if (isNaN(entry) || entry === 0) return 'Data Tidak Valid';
-    return (((exit - entry) / entry) * 100);
-  };
-
-  const totalTrades = entries.length;
-  const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
-  const totalGainLoss = entries.reduce(
-    (sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry)),
-    0
-  );
-
-  const toggleTable = () => {
-    setShowTable(prevShowTable => !prevShowTable);
-  };
+  const { totalTrades, winRate, totalGainLoss } = calculateStats();
 
   return (
-    <div className="container">
-      <h1>Firman Trading Diary</h1>
+    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <h1 style={{ textAlign: 'center' }}>Firman Trading Diary</h1>
 
-      <div className="form">
+      {/* Form Input */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: '10px',
+        marginBottom: '20px'
+      }}>
         <input
           name="date"
           type="date"
           value={form.date}
           onChange={handleChange}
-          placeholder="Tanggal"
+          required
+          style={{ padding: '8px' }}
         />
         <input
           name="ticker"
-          placeholder="Ticker (contoh: BBCA)"
+          placeholder="Ticker (ex: BBCA)"
           value={form.ticker}
           onChange={handleChange}
+          required
+          style={{ padding: '8px' }}
         />
         <input
           name="entry"
@@ -182,6 +199,10 @@ const TradingDiary = () => {
           placeholder="Entry Price"
           value={form.entry}
           onChange={handleChange}
+          required
+          step="0.01"
+          min="0"
+          style={{ padding: '8px' }}
         />
         <input
           name="exit"
@@ -189,85 +210,72 @@ const TradingDiary = () => {
           placeholder="Exit Price"
           value={form.exit}
           onChange={handleChange}
+          required
+          step="0.01"
+          min="0"
+          style={{ padding: '8px' }}
         />
         <input
           name="reason"
           placeholder="Alasan Setup"
           value={form.reason}
           onChange={handleChange}
+          style={{ padding: '8px' }}
         />
         <input
           name="emotion"
           placeholder="Catatan Emosi"
           value={form.emotion}
           onChange={handleChange}
+          style={{ padding: '8px' }}
         />
-        <button onClick={handleAdd}>+ Tambah Entry</button>
+        <button 
+          onClick={handleAdd}
+          style={{ 
+            gridColumn: '1 / -1',
+            padding: '10px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          + Tambah Entry
+        </button>
       </div>
 
-      {/* Komponen TradingView Chart */}
+      {/* TradingView Chart */}
       <TVChart symbol={`IDX:${ticker}`} />
 
-      {/* Summary Dashboard */}
-      <div className="summary-dashboard-container">
-        <h2>Ringkasan Performa</h2>
-        <p>Total Trade: {totalTrades}</p>
-        <p>Win Rate: {totalTrades > 0 ? ((winningTrades / totalTrades) * 100) : 0}%</p>
-        <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
+      {/* Ringkasan Performa */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-around',
+        margin: '20px 0',
+        padding: '15px',
+        backgroundColor: '#f0f0f0',
+        borderRadius: '8px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <h3>Total Trade</h3>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{totalTrades}</p>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <h3>Win Rate</h3>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{winRate.toFixed(1)}%</p>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <h3>Gain/Loss</h3>
+          <p style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold',
+            color: totalGainLoss >= 0 ? 'green' : 'red'
+          }}>
+            {totalGainLoss >= 0 ? '+' : ''}{totalGainLoss.toFixed(2)}
+          </p>
+        </div>
       </div>
 
-      {/* Tabel Entri */}
-      {showTable && (
-        <div className="entries-table">
-          <h2>Daftar Entri</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Ticker</th>
-                <th>Entry</th>
-                <th>Exit</th>
-                <th>Result</th>
-                <th>Gain%</th>
-                <th>Alasan</th>
-                <th>Emosi</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr key={index}>
-                  <td>{entry.date}</td>
-                  <td>{entry.ticker}</td>
-                  <td>{entry.entry}</td>
-                  <td>{entry.exit}</td>
-                  <td>{calcResult(entry.entry, entry.exit)}</td>
-                  <td>{calcGain(entry.entry, entry.exit)}%</td>
-                  <td>{entry.reason}</td>
-                  <td>{entry.emotion}</td>
-                  <td>
-                    <button onClick={() => handleDelete(index)}>Hapus</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <button onClick={toggleTable}>
-        {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
-      </button>
-
-      {/* Analisis Groq */}
-      {groqAnalysis && (
-        <div className="groq-analysis">
-          <h2>Analisis Saham {ticker}</h2>
-          <p>{groqAnalysis}</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default TradingDiary;
+      {/* Toggle Tabel */}
+      <button 
+        onClick={() => setShowTable
