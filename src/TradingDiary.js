@@ -57,7 +57,6 @@ const calcATR = (data, length) => {
 const TradingDiary = () => {
   const [entries, setEntries] = useState(() => {
     const savedEntries = localStorage.getItem('tradingEntries');
-    console.log('Initial entries from localStorage:', savedEntries);
     return savedEntries ? JSON.parse(savedEntries) : [];
   });
 
@@ -94,7 +93,6 @@ const TradingDiary = () => {
   }, [indicators, ticker]);
 
   useEffect(() => {
-    console.log('Entries updated:', entries);
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
@@ -118,12 +116,7 @@ const TradingDiary = () => {
       exit: parseFloat(form.exit),
     };
 
-    setEntries(prevEntries => {
-      const updatedEntries = [...prevEntries, newEntry];
-      console.log('New entry added:', newEntry);
-      console.log('Updated entries:', updatedEntries);
-      return updatedEntries;
-    });
+    setEntries(prevEntries => [...prevEntries, newEntry]);
 
     setForm({
       date: '',
@@ -139,39 +132,30 @@ const TradingDiary = () => {
 
   const handleDelete = (index) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus entri ini?')) {
-      setEntries(prevEntries => {
-        const newEntries = prevEntries.filter((_, i) => i !== index);
-        console.log('Entry deleted, new entries:', newEntries);
-        return newEntries;
-      });
+      setEntries(prevEntries => prevEntries.filter((_, i) => i !== index));
       alert('Entri berhasil dihapus!');
     }
   };
 
   const calcResult = (entry, exit) => {
     if (isNaN(entry) || isNaN(exit)) return 'Data Tidak Valid';
-    return (exit - entry).toFixed(2);
+    return (exit - entry);
   };
 
   const calcGain = (entry, exit) => {
     if (isNaN(entry) || entry === 0) return 'Data Tidak Valid';
-    return (((exit - entry) / entry) * 100).toFixed(2);
+    return (((exit - entry) / entry) * 100);
   };
 
   const totalTrades = entries.length;
   const winningTrades = entries.filter(e => calcResult(e.entry, e.exit) > 0).length;
   const totalGainLoss = entries.reduce(
-    (sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry) || 0),
+    (sum, e) => sum + (parseFloat(e.exit) - parseFloat(e.entry)),
     0
   );
 
   const toggleTable = () => {
-    setShowTable(prevShowTable => {
-      const newShowTable = !prevShowTable;
-      console.log('showTable toggled to:', newShowTable);
-      console.log('Entries at toggle:', entries);
-      return newShowTable;
-    });
+    setShowTable(prevShowTable => !prevShowTable);
   };
 
   return (
@@ -228,7 +212,7 @@ const TradingDiary = () => {
       <div className="summary-dashboard-container">
         <h2>Ringkasan Performa</h2>
         <p>Total Trade: {totalTrades}</p>
-        <p>Win Rate: {totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
+        <p>Win Rate: {totalTrades > 0 ? ((winningTrades / totalTrades) * 100) : 0}%</p>
         <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
       </div>
 
