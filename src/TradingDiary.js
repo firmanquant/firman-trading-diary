@@ -683,9 +683,20 @@ const TradingDiary = () => {
     });
   };
 
-  return (
-    <div className="container">
-      <h1>📘 Firman Trading Diary</h1>
+  const TradingDiary = () => {
+    // Logika atau state di sini
+    const totalTrades = entries.length;
+    const totalGainLoss = entries.reduce((sum, entry) => sum + entry.profit, 0);
+
+    return (
+        <div className="container">
+            <h1>📘 Firman Trading Diary</h1>
+            {/* Elemen JSX lainnya */}
+        </div>
+    );
+};
+
+export default TradingDiary;
 
       <div className="form">
         <input name="date" type="date" value={form.date} onChange={handleChange} placeholder="Tanggal" />
