@@ -1,4 +1,4 @@
-// TradingDiary.js (versi final, presisi produksi)
+// TradingDiary.js (versi final valid JSX dan presisi produksi)
 
 import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
@@ -12,22 +12,20 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
 
     const container = containerRef.current;
     if (!container || !window.TradingView) return;
-
     container.innerHTML = '';
 
     const widgetOptions = {
       symbol,
-      interval: "D",
-      timezone: "Asia/Jakarta",
-      theme: "dark",
-      style: "1",
-      locale: "id",
+      interval: 'D',
+      timezone: 'Asia/Jakarta',
+      theme: 'dark',
+      style: '1',
+      locale: 'id',
       autosize: true,
       container_id: 'tradingview-chart'
     };
 
     widgetRef.current = new window.TradingView.widget(widgetOptions);
-
     return () => {
       if (widgetRef.current?.remove) widgetRef.current.remove();
     };
@@ -36,17 +34,14 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.TradingView) return;
-
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/tv.js';
     script.async = true;
     script.id = 'tradingview-script';
-
     document.head.appendChild(script);
-
     return () => {
-      const existingScript = document.getElementById('tradingview-script');
-      if (existingScript) document.head.removeChild(existingScript);
+      const s = document.getElementById('tradingview-script');
+      if (s) document.head.removeChild(s);
     };
   }, []);
 
@@ -102,12 +97,10 @@ const TradingDiary = () => {
   const handleAdd = () => {
     const { date, ticker, entry, exit } = form;
     if (!date || !ticker || !entry || !exit) return alert('Lengkapi semua kolom wajib.');
-
     const entryNum = parseFloat(entry);
     const exitNum = parseFloat(exit);
     if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0)
       return alert('Entry dan Exit harus angka positif.');
-
     setEntries(prev => [...prev, { ...form, entry: entryNum, exit: exitNum }]);
     setForm({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   };
@@ -131,6 +124,7 @@ const TradingDiary = () => {
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
         <input type="date" name="date" value={form.date} onChange={handleChange} />
         <input name="ticker" placeholder="Ticker" value={form.ticker} onChange={handleChange} />
@@ -144,22 +138,19 @@ const TradingDiary = () => {
       <TVChart symbol={`IDX:${ticker}`} />
 
       <div className="summary-dashboard-container">
-  <div className="summary-box">
-    <h3>Total Trade</h3>
-    <p>{stats.total}</p>
-  </div>
-  <div className="summary-box">
-    <h3>Win Rate</h3>
-    <p>{winRate.toFixed(1)}%</p>
-  </div>
-  <div className="summary-box">
-    <h3>Gain/Loss</h3>
-    <p style={{ color: stats.gain >= 0 ? 'limegreen' : 'tomato' }}>
-      {stats.gain >= 0 ? '+' : ''}
-      {stats.gain.toFixed(2)}
-    </p>
-  </div>
-</div>
+        <div className="summary-card">
+          <p className="label">Total Trade</p>
+          <p className="value">{stats.total}</p>
+        </div>
+        <div className="summary-card">
+          <p className="label">Win Rate</p>
+          <p className="value">{winRate.toFixed(1)}%</p>
+        </div>
+        <div className="summary-card">
+          <p className="label">Gain/Loss</p>
+          <p className="value" style={{ color: stats.gain >= 0 ? 'limegreen' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p>
+        </div>
+      </div>
 
       <button className="toggle-table-btn" onClick={() => setShowTable(p => !p)}>
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
@@ -179,7 +170,7 @@ const TradingDiary = () => {
                 <td>{e.ticker}</td>
                 <td>{e.entry.toFixed(2)}</td>
                 <td>{e.exit.toFixed(2)}</td>
-                <td style={{ color: e.exit - e.entry >= 0 ? 'green' : 'red' }}>{(e.exit - e.entry).toFixed(2)}</td>
+                <td style={{ color: e.exit - e.entry >= 0 ? 'limegreen' : 'red' }}>{(e.exit - e.entry).toFixed(2)}</td>
                 <td>{e.reason}</td>
                 <td>{e.emotion}</td>
                 <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
@@ -194,7 +185,7 @@ const TradingDiary = () => {
         rsi={60} macdLine={1.5} signalLine={1.2} macdLine_4H={0.5} signalLine_4H={0.4}
         plusDI={25} minusDI={15} adx={30} atrPct={1.8}
         kalman={form.entry || 100} close={form.exit || 105}
-        groqAnalysis={groqAnalysis}
+        groqAnalysis={groqAnalysis} symbol={ticker}
       />
     </div>
   );
