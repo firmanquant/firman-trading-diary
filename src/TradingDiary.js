@@ -12,23 +12,23 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     const container = containerRef.current;
     if (!container || !window.TradingView) return;
 
-    container.innerHTML = ""; // Reset chart
+    container.innerHTML = '';
 
     const widgetOptions = {
       symbol,
-      interval: "D",
-      timezone: "Asia/Jakarta",
-      theme: "dark",
-      style: "1",
-      locale: "id",
+      interval: 'D',
+      timezone: 'Asia/Jakarta',
+      theme: 'dark',
+      style: '1',
+      locale: 'id',
       autosize: true,
-      container_id: "tradingview-chart"
+      container_id: 'tradingview-chart',
     };
 
     widgetRef.current = new window.TradingView.widget(widgetOptions);
 
     return () => {
-      if (widgetRef.current && typeof widgetRef.current.remove === 'function') {
+      if (widgetRef.current?.remove) {
         widgetRef.current.remove();
       }
     };
@@ -49,14 +49,12 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     document.head.appendChild(script);
 
     return () => {
-      const existingScript = document.getElementById('tradingview-script');
-      if (existingScript) {
-        document.head.removeChild(existingScript);
-      }
+      const existing = document.getElementById('tradingview-script');
+      if (existing) document.head.removeChild(existing);
     };
   }, []);
 
-  return <div id="tradingview-chart" ref={containerRef} style={{ height: "350px" }} />;
+  return <div id="tradingview-chart" ref={containerRef} style={{ height: 350 }} />;
 };
 
 const TradingDiary = () => {
@@ -75,7 +73,7 @@ const TradingDiary = () => {
     entry: '',
     exit: '',
     reason: '',
-    emotion: ''
+    emotion: '',
   });
 
   const [ticker, setTicker] = useState('BBCA');
@@ -87,12 +85,12 @@ const TradingDiary = () => {
       const res = await fetch('/api/groq', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Analisis teknikal saham ${ticker}` })
+        body: JSON.stringify({ prompt: `Analisis teknikal saham ${ticker}` }),
       });
 
       const data = await res.json();
       setGroqAnalysis(data.response || 'Tidak ada respon.');
-    } catch (e) {
+    } catch (error) {
       setGroqAnalysis('Gagal memuat analisis.');
     }
   };
@@ -105,33 +103,34 @@ const TradingDiary = () => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (name === 'ticker' && value.trim()) {
-      setTicker(value.toUpperCase());
-    }
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'ticker') setTicker(value.toUpperCase());
   };
 
   const handleAdd = () => {
     const { date, ticker, entry, exit } = form;
+    const entryNum = parseFloat(entry);
+    const exitNum = parseFloat(exit);
+
     if (!date || !ticker || !entry || !exit) {
-      alert('Lengkapi semua kolom wajib.');
+      alert('Isi semua kolom wajib!');
       return;
     }
 
-    const entryNum = parseFloat(entry);
-    const exitNum = parseFloat(exit);
-    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0) {
+    if (isNaN(entryNum) || isNaN(exitNum) || entryNum <= 0 || exitNum <= 0) {
       alert('Entry dan Exit harus angka positif.');
       return;
     }
 
-    setEntries(prev => [...prev, {
+    const newEntry = {
       ...form,
       entry: entryNum,
-      exit: exitNum
-    }]);
+      exit: exitNum,
+    };
+
+    setEntries((prev) => [...prev, newEntry]);
 
     setForm({
       date: '',
@@ -139,36 +138,40 @@ const TradingDiary = () => {
       entry: '',
       exit: '',
       reason: '',
-      emotion: ''
+      emotion: '',
     });
   };
 
-  const handleDelete = idx => {
-    if (window.confirm('Yakin hapus entri ini?')) {
-      setEntries(prev => prev.filter((_, i) => i !== idx));
+  const handleDelete = (index) => {
+    if (window.confirm('Hapus entri ini?')) {
+      setEntries((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
-  const stats = entries.reduce((acc, e) => {
-    const gain = e.exit - e.entry;
-    acc.total += 1;
-    acc.gain += gain;
-    if (gain > 0) acc.wins += 1;
-    return acc;
-  }, { total: 0, gain: 0, wins: 0 });
+  const stats = entries.reduce(
+    (acc, e) => {
+      const profit = e.exit - e.entry;
+      acc.total += 1;
+      acc.gain += profit;
+      if (profit > 0) acc.wins += 1;
+      return acc;
+    },
+    { total: 0, gain: 0, wins: 0 }
+  );
 
-  const winRate = stats.total ? (stats.wins / stats.total) * 100 : 0;
+  const winRate = stats.total ? ((stats.wins / stats.total) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="container">
       <h1>Firman Trading Diary</h1>
+
       <div className="form">
         <input type="date" name="date" value={form.date} onChange={handleChange} />
-        <input name="ticker" placeholder="Ticker" value={form.ticker} onChange={handleChange} />
-        <input name="entry" type="number" placeholder="Entry" value={form.entry} onChange={handleChange} />
-        <input name="exit" type="number" placeholder="Exit" value={form.exit} onChange={handleChange} />
-        <input name="reason" placeholder="Alasan" value={form.reason} onChange={handleChange} />
-        <input name="emotion" placeholder="Emosi" value={form.emotion} onChange={handleChange} />
+        <input name="ticker" placeholder="Ticker (contoh: BBCA)" value={form.ticker} onChange={handleChange} />
+        <input name="entry" type="number" placeholder="Entry Price" value={form.entry} onChange={handleChange} />
+        <input name="exit" type="number" placeholder="Exit Price" value={form.exit} onChange={handleChange} />
+        <input name="reason" placeholder="Alasan Setup" value={form.reason} onChange={handleChange} />
+        <input name="emotion" placeholder="Catatan Emosi" value={form.emotion} onChange={handleChange} />
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
@@ -181,17 +184,18 @@ const TradingDiary = () => {
         </div>
         <div className="summary-card">
           <h2>Win Rate</h2>
-          <p>{winRate.toFixed(1)}%</p>
+          <p>{winRate}%</p>
         </div>
         <div className="summary-card">
           <h2>Gain/Loss</h2>
           <p style={{ color: stats.gain >= 0 ? 'green' : 'red' }}>
-            {stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}
+            {stats.gain >= 0 ? '+' : ''}
+            {stats.gain.toFixed(2)}
           </p>
         </div>
       </div>
 
-      <button className="toggle-table-btn" onClick={() => setShowTable(p => !p)}>
+      <button className="toggle-table-btn" onClick={() => setShowTable((p) => !p)}>
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
       </button>
 
@@ -221,14 +225,15 @@ const TradingDiary = () => {
                 </td>
                 <td>{e.reason}</td>
                 <td>{e.emotion}</td>
-                <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
+                <td>
+                  <button onClick={() => handleDelete(i)}>Hapus</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      {/* Dashboard Mini */}
       <SignalDashboard
         ema20={50}
         ema50={45}
@@ -236,17 +241,17 @@ const TradingDiary = () => {
         ema50Prev={46}
         ema20_1W={49}
         ema50_1W={47}
-        rsi={60}
+        rsi={69}
         macdLine={1.5}
-        signalLine={1.2}
-        macdLine_4H={0.5}
-        signalLine_4H={0.4}
-        plusDI={25}
-        minusDI={15}
-        adx={30}
-        atrPct={1.8}
-        kalman={102}
-        close={105}
+        signalLine={1.9}
+        macdLine_4H={-0.2}
+        signalLine_4H={0.1}
+        plusDI={30}
+        minusDI={25}
+        adx={76.01}
+        atrPct={0.67}
+        kalman={72.52}
+        close={100}
         groqAnalysis={groqAnalysis}
       />
     </div>
