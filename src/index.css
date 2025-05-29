@@ -1,206 +1,168 @@
-/* Global reset dan font */
 body {
   margin: 0;
-  padding: 10px;
+  padding: 0;
   background-color: #121212;
   color: #e0e0e0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 13px;
+  line-height: 1.4;
 }
 
-/* Container utama */
 .container {
   max-width: 1000px;
   margin: auto;
+  padding: 10px 10px 20px 10px;
 }
 
-/* Judul */
 h1 {
-  font-size: 1.3rem;
-  margin-bottom: 10px;
-  color: #90caf9;
   text-align: center;
+  margin: 10px 0;
+  font-size: 20px;
+  color: #66ccff;
 }
 
-/* Form */
 .form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
   background-color: #1e1e1e;
-  padding: 10px;
-  border-radius: 5px;
+  padding: 8px;
+  border-radius: 4px;
 }
 
-.form input {
+input,
+button {
   padding: 6px;
-  border: none;
+  font-size: 13px;
   border-radius: 3px;
+  border: none;
+}
+
+input {
   background-color: #2a2a2a;
   color: #e0e0e0;
-  font-size: 0.8rem;
-  transition: border 0.3s;
 }
 
-.form input:focus {
-  outline: none;
-  border: 1px solid #2196f3;
-}
-
-.form button {
-  background-color: #2196f3;
+button {
+  background-color: #007bff;
   color: white;
-  border: none;
-  padding: 6px;
-  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s ease;
 }
 
-.form button:hover {
-  background-color: #1976d2;
+button:hover {
+  background-color: #0056b3;
 }
 
-/* Tombol "Lihat Hasil" */
 .toggle-table-btn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 6px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s;
-  margin-bottom: 10px;
+  margin: 10px 0;
+  background-color: green;
 }
 
-.toggle-table-btn:hover {
-  background-color: #388e3c;
-}
-
-/* Summary dan Dashboard container */
-.summary-dashboard-container {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-/* Summary box */
-.summary-card {
-  background-color: #1e1e1e;
-  padding: 10px;
-  border-radius: 5px;
-  flex: 1;
-  min-width: 220px;
-}
-
-.summary-card h2 {
-  margin-top: 0;
-  color: #81d4fa;
-  font-size: 1.1rem;
-}
-
-/* Tabel jurnal */
 table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #1a1a1a;
-  border-radius: 5px;
-  overflow: hidden;
-  margin-bottom: 10px;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  margin-top: 12px;
+  font-size: 12px;
 }
 
-table th,
-table td {
+th,
+td {
+  border: 1px solid #444;
   padding: 6px;
-  text-align: left;
-  border-bottom: 1px solid #333;
-  font-size: 0.8rem;
+  text-align: center;
 }
 
-table th {
-  background-color: #263238;
-  color: #b2ebf2;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-table tr:hover {
+th {
   background-color: #2a2a2a;
 }
 
-table button {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 3px 6px;
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  transition: background-color 0.3s;
+.summary-dashboard-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
-table button:hover {
-  background-color: #d32f2f;
+.summary-card {
+  flex: 1 1 30%;
+  padding: 8px;
+  background-color: #1e1e1e;
+  border-radius: 4px;
+  text-align: center;
 }
 
-/* Dashboard mini */
+.summary-card h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #66ccff;
+}
+
 .dashboard {
   background-color: #1e1e1e;
-  padding: 10px;
-  border-radius: 5px;
-  flex: 2;
-  min-width: 220px;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
 }
 
 .dashboard h2 {
-  margin-bottom: 0.6rem;
-  color: #81d4fa;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #66ccff;
 }
 
 .dashboard-row {
   display: flex;
   justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 0.3rem;
   flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .dashboard-row p {
-  margin: 0;
-  font-size: 0.8rem;
-  flex: 1;
-  min-width: 90px;
+  flex: 1 1 45%;
+  margin: 2px 0;
 }
 
-/* Chart container */
-#tv_chart_container {
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-/* Gaya untuk analisis Groq */
 .groq-analysis {
   margin-top: 10px;
+  background-color: #202020;
   padding: 8px;
-  background-color: #263238;
-  border-radius: 5px;
-  color: #b2ebf2;
+  border-radius: 4px;
+  font-style: italic;
+  color: #9fc;
 }
 
-.groq-analysis strong {
-  display: block;
-  margin-bottom: 5px;
-  color: #81d4fa;
+#tradingview-chart {
+  width: 100%;
+  height: 300px;
+  margin-bottom: 16px;
+  background-color: #000;
+  border: 1px solid #333;
+  border-radius: 4px;
 }
 
-.groq-analysis p {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
+@media screen and (max-height: 800px) {
+  .form,
+  .summary-dashboard-container,
+  .dashboard {
+    font-size: 0.75rem;
+  }
+
+  #tradingview-chart {
+    height: 250px;
+  }
+
+  .form input,
+  .form button {
+    font-size: 12px;
+    padding: 4px;
+  }
+
+  .summary-card h2 {
+    font-size: 0.9rem;
+  }
 }
