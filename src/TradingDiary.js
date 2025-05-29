@@ -695,8 +695,6 @@ export default TradingDiary;
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-import React, { useState } from 'react';
-
 const TradingDiary = () => {
     // State untuk menyimpan input form
     const [input, setInput] = useState({
