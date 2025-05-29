@@ -245,8 +245,8 @@ const TradingDiary = () => {
         minusDI={15}
         adx={30}
         atrPct={1.8}
-        kalman={e?.entry || 100}
-        close={e?.exit || 105}
+        kalman={102}
+        close={105}
         groqAnalysis={groqAnalysis}
       />
     </div>
