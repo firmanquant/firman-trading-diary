@@ -144,10 +144,22 @@ const TradingDiary = () => {
       <TVChart symbol={`IDX:${ticker}`} />
 
       <div className="summary-dashboard-container">
-        <div className="summary-card"><h2>Total Trade</h2><p>{stats.total}</p></div>
-        <div className="summary-card"><h2>Win Rate</h2><p>{winRate.toFixed(1)}%</p></div>
-        <div className="summary-card"><h2>Gain/Loss</h2><p style={{ color: stats.gain >= 0 ? 'green' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p></div>
-      </div>
+  <div className="summary-box">
+    <h3>Total Trade</h3>
+    <p>{stats.total}</p>
+  </div>
+  <div className="summary-box">
+    <h3>Win Rate</h3>
+    <p>{winRate.toFixed(1)}%</p>
+  </div>
+  <div className="summary-box">
+    <h3>Gain/Loss</h3>
+    <p style={{ color: stats.gain >= 0 ? 'limegreen' : 'tomato' }}>
+      {stats.gain >= 0 ? '+' : ''}
+      {stats.gain.toFixed(2)}
+    </p>
+  </div>
+</div>
 
       <button className="toggle-table-btn" onClick={() => setShowTable(p => !p)}>
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
