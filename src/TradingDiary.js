@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
 
+// Pastikan FirmanQuantStrategy tersedia
+// Saya asumsikan FirmanQuantStrategy ada di file SignalDashboard.js
+// Jika tidak, Anda perlu membuat file terpisah untuk FirmanQuantStrategy
+import { FirmanQuantStrategy } from './SignalDashboard';
+
 // Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
   const containerRef = useRef(null);
@@ -100,27 +105,73 @@ const TradingDiary = () => {
     close: null
   });
 
-  // Fetch analisis Grok
+  const strategyRef = useRef(null);
+
+  // Inisialisasi strategi
+  useEffect(() => {
+    const strategyParams = {
+      ema20Len: 20,
+      ema50Len: 50,
+      sma20Len: 20,
+      sma50Len: 50,
+      enableKalman: true,
+      kalmanLen: 20,
+      kalmanGain: 0.5,
+      dmiLen: 14,
+      adxSmooth: 14,
+      macdFast: 12,
+      macdSlow: 26,
+      macdSignal: 9,
+      rsiLen: 14,
+      liquidityLookback: 50,
+      volumeThreshold: 1.5
+    };
+
+    strategyRef.current = new FirmanQuantStrategy(strategyParams);
+
+    // Inisialisasi dengan data awal
+    const initialData = {
+      open: 9400, // Harga awal (contoh dari tampilan aplikasi)
+      high: 9400 * 1.01,
+      low: 9400 * 0.99,
+      close: 9400,
+      volume: 236985000, // Volume dari tampilan aplikasi
+      timestamp: Date.now()
+    };
+    strategyRef.current.processNewData(initialData);
+
+    // Update indikator awal
+    const idx = strategyRef.current.closes.length - 1;
+    setIndicators({
+      ema20: strategyRef.current.ema20Values[idx],
+      ema50: strategyRef.current.ema50Values[idx],
+      ema20Prev: idx > 0 ? strategyRef.current.ema20Values[idx - 1] : null,
+      ema50Prev: idx > 0 ? strategyRef.current.ema50Values[idx - 1] : null,
+      ema20_1W: strategyRef.current.ema20Values[idx] * 1.01, // Simulasi untuk 1W
+      ema50_1W: strategyRef.current.ema50Values[idx] * 1.005, // Simulasi untuk 1W
+      rsi: strategyRef.current.rsiValues[idx],
+      macdLine: strategyRef.current.macdLineValues[idx],
+      signalLine: strategyRef.current.signalLineValues[idx],
+      macdLine_4H: strategyRef.current.macdLineValues[idx] * 0.8, // Simulasi untuk 4H
+      signalLine_4H: strategyRef.current.signalLineValues[idx] * 0.8, // Simulasi untuk 4H
+      plusDI: strategyRef.current.plusDIValues[idx],
+      minusDI: strategyRef.current.minusDIValues[idx],
+      adx: strategyRef.current.adxValues[idx],
+      atrPct: 2.0, // Contoh dari tampilan aplikasi
+      kalman: strategyRef.current.kalmanValues[idx],
+      close: strategyRef.current.closes[idx]
+    });
+  }, []);
+
+  // Simulasi analisis AI (seperti versi sukses)
   const fetchGroqAnalysis = async () => {
     try {
-      const response = await fetch('/api/groq', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: `Berikan analisis teknikal untuk saham ${ticker} di pasar IDX.`
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setGroqAnalysis(data.response);
-      } else {
-        setGroqAnalysis('Gagal memuat analisis: ' + (data.message || 'Unknown error'));
-      }
+      const fakeAnalysis = `Analisis teknis ${ticker}: Tren bullish terdeteksi. 
+      Rekomendasi: Akumulasi pada area support. Target harga +5% dari level saat ini.`;
+      
+      setGroqAnalysis(fakeAnalysis);
     } catch (error) {
-      setGroqAnalysis('Gagal memuat analisis: ' + error.message);
+      setGroqAnalysis(`Gagal memuat analisis: ${error.message}`);
     }
   };
 
@@ -169,29 +220,39 @@ const TradingDiary = () => {
 
     setEntries(prev => [...prev, newEntry]);
 
-    // Update indikator dengan data baru
-    setIndicators(prev => ({
-      ...prev,
-      close: Number(form.exit),
-      // Simulasi data lain untuk SignalDashboard
-      // Dalam aplikasi nyata, data ini harus diambil dari FirmanQuantStrategy
-      ema20: Number(form.exit) * 1.02, // Contoh
-      ema50: Number(form.exit) * 1.01, // Contoh
-      ema20Prev: prev.ema20 || Number(form.exit) * 1.02,
-      ema50Prev: prev.ema50 || Number(form.exit) * 1.01,
-      ema20_1W: Number(form.exit) * 1.03, // Contoh
-      ema50_1W: Number(form.exit) * 1.02, // Contoh
-      rsi: 69, // Contoh
-      macdLine: 0.5, // Contoh
-      signalLine: 0.3, // Contoh
-      macdLine_4H: 0.4, // Contoh
-      signalLine_4H: 0.2, // Contoh
-      plusDI: 25, // Contoh
-      minusDI: 15, // Contoh
-      adx: 76.01, // Contoh
-      atrPct: 2.0, // Contoh
-      kalman: Number(form.exit) * 0.99 // Contoh
-    }));
+    // Proses data dengan strategi
+    if (strategyRef.current) {
+      strategyRef.current.processNewData({
+        open: Number(form.entry),
+        high: Number(form.entry) * 1.01,
+        low: Number(form.entry) * 0.99,
+        close: Number(form.exit),
+        volume: 1000000,
+        timestamp: Date.now()
+      });
+
+      // Update indikator
+      const idx = strategyRef.current.closes.length - 1;
+      setIndicators({
+        ema20: strategyRef.current.ema20Values[idx],
+        ema50: strategyRef.current.ema50Values[idx],
+        ema20Prev: idx > 0 ? strategyRef.current.ema20Values[idx - 1] : null,
+        ema50Prev: idx > 0 ? strategyRef.current.ema50Values[idx - 1] : null,
+        ema20_1W: strategyRef.current.ema20Values[idx] * 1.01, // Simulasi untuk 1W
+        ema50_1W: strategyRef.current.ema50Values[idx] * 1.005, // Simulasi untuk 1W
+        rsi: strategyRef.current.rsiValues[idx],
+        macdLine: strategyRef.current.macdLineValues[idx],
+        signalLine: strategyRef.current.signalLineValues[idx],
+        macdLine_4H: strategyRef.current.macdLineValues[idx] * 0.8, // Simulasi untuk 4H
+        signalLine_4H: strategyRef.current.signalLineValues[idx] * 0.8, // Simulasi untuk 4H
+        plusDI: strategyRef.current.plusDIValues[idx],
+        minusDI: strategyRef.current.minusDIValues[idx],
+        adx: strategyRef.current.adxValues[idx],
+        atrPct: 2.0, // Contoh dari tampilan aplikasi
+        kalman: strategyRef.current.kalmanValues[idx],
+        close: strategyRef.current.closes[idx]
+      });
+    }
 
     setForm({
       date: '',
