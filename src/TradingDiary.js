@@ -499,15 +499,9 @@ const TradingDiary = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          const response = await fetch('/api/groq', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data)
-});
-  body: JSON.stringify({ prompt }),
-});
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
       });
 
       console.log('Groq API response status:', response.status);
