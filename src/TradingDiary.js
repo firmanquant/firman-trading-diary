@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FirmanQuantStrategy } from './strategy'; // Impor strategi
+
+// Pastikan file FirmanQuantStrategy.js ada di folder src/ dan diekspor dengan benar
+import { FirmanQuantStrategy } from './FirmanQuantStrategy';
 
 // Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
@@ -141,8 +143,16 @@ const TradingDiary = () => {
 
   const handleAdd = () => {
     const { date, ticker, entry, exit } = form;
+    const entryNum = Number(entry);
+    const exitNum = Number(exit);
+
     if (!date || !ticker || !entry || !exit) {
       alert('Harap isi semua kolom wajib!');
+      return;
+    }
+
+    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0) {
+      alert('Harga Entry dan Exit harus angka positif!');
       return;
     }
 
@@ -157,10 +167,10 @@ const TradingDiary = () => {
     // Proses data dengan strategi
     if (strategyRef.current) {
       strategyRef.current.processNewData({
-        open: Number(entry),
-        high: Number(entry) * 1.01,
-        low: Number(entry) * 0.99,
-        close: Number(exit),
+        open: Number(form.entry),
+        high: Number(form.entry) * 1.01,
+        low: Number(form.entry) * 0.99,
+        close: Number(form.exit),
         volume: 1000000,
         timestamp: Date.now()
       });
