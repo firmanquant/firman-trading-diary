@@ -1,3 +1,4 @@
+// src/SignalDashboard.js
 import React from 'react';
 
 const SignalDashboard = ({
@@ -20,22 +21,22 @@ const SignalDashboard = ({
   close,
   groqAnalysis
 }) => {
-  const emaTrend = ema20 > ema50 && ema20Prev > ema50Prev ? 'Uptrend' : 'Downtrend';
-  const diTrend = plusDI > minusDI ? '+DI Dominan 📈' : '-DI Dominan 📉';
+  const buySignal = ema20 > ema50 && ema20Prev <= ema50Prev;
+  const sellSignal = ema20 < ema50 && ema20Prev >= ema50Prev;
   const trend1W = ema20_1W > ema50_1W ? 'Bullish 🟢' : 'Bearish 🔴';
-  const atrStatus = atrPct < 2.5 ? 'Normal 🟢' : 'Volatile 🔴';
-  const kalmanDiff = kalman != null ? (close - kalman).toFixed(2) : 'N/A';
+  const diTrend = plusDI > minusDI ? '+DI Dominan 📈' : '-DI Dominan 📉';
+  const trendEW = ema20 > ema50 ? 'Uptrend 🟢' : 'Downtrend 🔴';
+  const atrStatus = atrPct <= 2.5 ? 'Normal 🟢' : 'Volatile 🔴';
+  const kalmanDiff = kalman !== null ? (close - kalman).toFixed(2) : 'N/A';
   const macd4HTrend = macdLine_4H > signalLine_4H ? 'Bullish 🟢' : 'Bearish 🔴';
-  const buySignal = macdLine > signalLine && ema20 > ema50;
-  const sellSignal = macdLine < signalLine && ema20 < ema50;
 
   return (
     <div className="dashboard">
       <h2>📊 Dashboard Mini</h2>
       <div className="dashboard-row">
         <p><strong>Sinyal:</strong> {buySignal ? 'BELI ✅' : sellSignal ? 'JUAL ❌' : 'TIDAK ADA'}</p>
-        <p><strong>EMA Trend:</strong> {emaTrend}</p>
-        <p><strong>RSI:</strong> {rsi ? rsi.toFixed(0) : 'N/A'}</p>
+        <p><strong>EMA Trend:</strong> {trendEW}</p>
+        <p><strong>RSI:</strong> {rsi || 'N/A'}</p>
       </div>
       <div className="dashboard-row">
         <p><strong>MACD:</strong> {macdLine > signalLine ? 'Bullish 🟢' : 'Bearish 🔴'}</p>
@@ -52,7 +53,7 @@ const SignalDashboard = ({
       </div>
       <div className="groq-analysis">
         <strong>Analisis Groq:</strong>
-        <p>{groqAnalysis || 'Memuat analisis…'}</p>
+        <p>{groqAnalysis || 'Memuat analisis...'}</p>
       </div>
     </div>
   );
