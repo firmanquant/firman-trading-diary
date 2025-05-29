@@ -519,13 +519,6 @@ const TradingDiary = () => {
   setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${error.message}`);
 }}
 
-      const data = await response.json();
-      console.log('Groq API response data:', data);
-      setGroqAnalysis(data.response || 'Tidak ada analisis dari Groq.');
-    } catch (error) {
-      console.error('Error calling Groq API:', error.message);
-      setGroqAnalysis(`Gagal mengambil analisis dari Groq: ${error.message}`);
-    }
   };
 
   useEffect(() => {
