@@ -1,39 +1,37 @@
-// File: pages/api/groq.js
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt } = req.body || {};
+  const { prompt } = req.body;
+
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Prompt is required' });
+  }
 
   try {
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`, // <- ENV var diatur di Vercel Dashboard
       },
       body: JSON.stringify({
-        model: 'llama2-70b-4096',
-        messages: [
-          { role: 'system', content: 'Kamu adalah analis teknikal profesional.' },
-          { role: 'user', content: prompt },
-        ],
+        model: 'mixtral-8x7b-32768',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
       }),
     });
 
-    const data = await groqResponse.json();
+    const data = await groqRes.json();
 
-    if (!groqResponse.ok) {
-      console.error('Groq API error:', data);
-      return res.status(groqResponse.status).json({ message: data });
-    }
+    const text =
+      data.choices?.[0]?.message?.content?.trim() ||
+      'Tidak ada hasil analisis dari model.';
 
-    const reply = data.choices?.[0]?.message?.content || 'Tidak ada analisis.';
-    res.status(200).json({ response: reply });
-  } catch (error) {
-    console.error('Groq API exception:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(200).json({ response: text });
+  } catch (err) {
+    console.error('GROQ API error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
