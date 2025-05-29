@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FirmanQuantStrategy } from './strategy'; // Impor strategi
 
-// Komponen TradingView Chart (Diperbaiki dengan cleanup)
+// Komponen TradingView Chart
 const TVChart = ({ symbol = "IDX:BBCA" }) => {
   const containerRef = useRef(null);
+  const widgetRef = useRef(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -18,15 +20,14 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
       style: "1",
       locale: "id",
       autosize: true,
-      container_id: container.id
+      container_id: "tradingview-chart"
     };
 
-    const widget = new window.TradingView.widget(widgetOptions);
+    widgetRef.current = new window.TradingView.widget(widgetOptions);
 
     return () => {
-      // Cleanup widget saat komponen di-unmount
-      if (widget && typeof widget.remove === 'function') {
-        widget.remove();
+      if (widgetRef.current && typeof widgetRef.current.remove === 'function') {
+        widgetRef.current.remove();
       }
     };
   }, [symbol]);
@@ -40,6 +41,9 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     script.async = true;
     script.id = 'tradingview-script';
     
+    script.onload = () => console.log('TradingView script loaded');
+    script.onerror = () => console.error('Failed to load TradingView script');
+    
     document.head.appendChild(script);
 
     return () => {
@@ -50,7 +54,7 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
     };
   }, []);
 
-  return <div ref={containerRef} style={{ height: "350px" }} />;
+  return <div id="tradingview-chart" ref={containerRef} style={{ height: "350px" }} />;
 };
 
 const TradingDiary = () => {
@@ -76,11 +80,34 @@ const TradingDiary = () => {
   const [ticker, setTicker] = useState('BBCA');
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
+  const strategyRef = useRef(null);
+
+  // Inisialisasi strategi
+  useEffect(() => {
+    const strategyParams = {
+      ema20Len: 20,
+      ema50Len: 50,
+      sma20Len: 20,
+      sma50Len: 50,
+      enableKalman: true,
+      kalmanLen: 20,
+      kalmanGain: 0.5,
+      dmiLen: 14,
+      adxSmooth: 14,
+      macdFast: 12,
+      macdSlow: 26,
+      macdSignal: 9,
+      rsiLen: 14,
+      liquidityLookback: 50,
+      volumeThreshold: 1.5
+    };
+
+    strategyRef.current = new FirmanQuantStrategy(strategyParams);
+  }, []);
 
   // Simulasi analisis AI
   const fetchGroqAnalysis = async () => {
     try {
-      // Implementasi sebenarnya menggunakan API
       const fakeAnalysis = `Analisis teknis ${ticker}: Tren bullish terdeteksi. 
       Rekomendasi: Akumulasi pada area support. Target harga +5% dari level saat ini.`;
       
@@ -126,6 +153,19 @@ const TradingDiary = () => {
     };
 
     setEntries(prev => [...prev, newEntry]);
+    
+    // Proses data dengan strategi
+    if (strategyRef.current) {
+      strategyRef.current.processNewData({
+        open: Number(entry),
+        high: Number(entry) * 1.01,
+        low: Number(entry) * 0.99,
+        close: Number(exit),
+        volume: 1000000,
+        timestamp: Date.now()
+      });
+    }
+
     setForm({
       date: '',
       ticker: '',
@@ -278,4 +318,71 @@ const TradingDiary = () => {
 
       {/* Toggle Tabel */}
       <button 
-        onClick={() => setShowTable
+        onClick={() => setShowTable(prev => !prev)}
+        style={{
+          padding: '10px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+          marginBottom: '20px'
+        }}
+      >
+        {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
+      </button>
+
+      {/* Tabel Entri */}
+      {showTable && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f0f0f0' }}>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Tanggal</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Ticker</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Entry</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Exit</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Profit</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Alasan</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Emosi</th>
+              <th style={{ padding: '10px', border: '1px solid #ddd' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry, index) => (
+              <tr key={index}>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.date}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.ticker}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.entry.toFixed(2)}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.exit.toFixed(2)}</td>
+                <td style={{ 
+                  padding: '10px', 
+                  border: '1px solid #ddd',
+                  color: (entry.exit - entry.entry) >= 0 ? 'green' : 'red'
+                }}>
+                  {(entry.exit - entry.entry).toFixed(2)}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.reason}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{entry.emotion}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                  <button 
+                    onClick={() => handleDelete(index)}
+                    style={{ 
+                      padding: '5px 10px',
+                      backgroundColor: '#ff4444',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Hapus
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
+
+export default TradingDiary;
