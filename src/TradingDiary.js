@@ -695,39 +695,43 @@ export default TradingDiary;
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-      <div className="summary-dashboard-container">
-        <div className="summary-card">
-          <h2>📊 Ringkasan Performa</h2>
-          <p>Total Trade: {totalTrades}</p>
-          <p>Win Rate: {totalTrades ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
-          <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
-        </div>
-
-        {indicators ? (
-          <SignalDashboard
-            ema20={indicators.ema20}
-            ema50={indicators.ema50}
-            ema20Prev={indicators.ema20Prev}
-            ema50Prev={indicators.ema50Prev}
-            ema20_1W={indicators.ema20_1W}
-            ema50_1W={indicators.ema50_1W}
-            rsi={indicators.rsi}
-            macdLine={indicators.macdLine}
-            signalLine={indicators.signalLine}
-            macdLine_4H={indicators.macdLine_4H}
-            signalLine_4H={indicators.signalLine_4H}
-            plusDI={indicators.plusDI}
-            minusDI={indicators.minusDI}
-            adx={indicators.adx}
-            atrPct={indicators.atrPct}
-            kalman={indicators.kalman}
-            close={indicators.close}
-            groqAnalysis={groqAnalysis}
-          />
-        ) : (
-          <p>Loading indicators...</p>
-        )}
+      return (
+  <>
+    <div className="summary-dashboard-container">
+      <div className="summary-card">
+        <h2>📊 Ringkasan Performa</h2>
+        <p>Total Trade: {totalTrades}</p>
+        <p>Win Rate: {totalTrades ? ((winningTrades / totalTrades) * 100).toFixed(2) : 0}%</p>
+        <p>Total Gain/Loss: {totalGainLoss.toFixed(2)}</p>
       </div>
+    </div>
+
+    {indicators ? (
+      <SignalDashboard
+        ema20={indicators.ema20}
+        ema50={indicators.ema50}
+        ema20Prev={indicators.ema20Prev}
+        ema50Prev={indicators.ema50Prev}
+        ema20_1W={indicators.ema20_1W}
+        ema50_1W={indicators.ema50_1W}
+        rsi={indicators.rsi}
+        macdLine={indicators.macdLine}
+        signalLine={indicators.signalLine}
+        macdLine_4H={indicators.macdLine_4H}
+        signalLine_4H={indicators.signalLine_4H}
+        plusDI={indicators.plusDI}
+        minusDI={indicators.minusDI}
+        adx={indicators.adx}
+        atrPct={indicators.atrPct}
+        kalman={indicators.kalman}
+        close={indicators.close}
+        groqAnalysis={groqAnalysis}
+      />
+    ) : (
+      <p>Loading indicators...</p>
+    )}
+  </>
+);
 
       {entries.length > 0 && (
         <button className="toggle-table-btn" onClick={toggleTable}>
