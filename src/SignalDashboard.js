@@ -23,7 +23,7 @@ const SignalDashboard = ({
       : 'TIDAK ADA';
 
   return (
-    <div className="analysis-grid">
+    <div className="analysis-layout">
       <div className="groq-box">
         <h3>🧠 Analisis Groq</h3>
         <p>{groqAnalysis || 'Gagal memuat analisis.'}</p>
@@ -37,9 +37,9 @@ const SignalDashboard = ({
         <p><strong>4H MACD:</strong> {isBullish4H ? 'Bullish 🟢' : 'Bearish 🔴'}</p>
         <p><strong>EMA Trend:</strong> {emaTrend}</p>
         <p><strong>DI+/DI-:</strong> {diTrend}</p>
-        <p><strong>ATR:</strong> {atrPct}% {atrLabel} 🟢</p>
+        <p><strong>ATR:</strong> {atrPct}% {atrLabel}</p>
         <p><strong>RSI:</strong> {rsi}</p>
-        <p><strong>Trend 1W:</strong> {trend1W} 🟢</p>
+        <p><strong>Trend 1W:</strong> {trend1W}</p>
         <p><strong>Kalman Diff:</strong> {kalman}</p>
       </div>
     </div>
