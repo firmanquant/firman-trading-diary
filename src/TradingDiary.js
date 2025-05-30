@@ -1,53 +1,41 @@
-// TradingDiary.js (versi final presisi produksi)
+// TradingDiary.js (versi final, presisi, layout emosional)
 
 import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
 
-const TVChart = ({ symbol = 'IDX:BBCA' }) => {
+const TVChart = ({ symbol = "IDX:BBCA" }) => {
   const containerRef = useRef(null);
   const widgetRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const container = containerRef.current;
     if (!container || !window.TradingView) return;
-
     container.innerHTML = '';
 
     const widgetOptions = {
       symbol,
-      interval: 'D',
-      timezone: 'Asia/Jakarta',
-      theme: 'dark',
-      style: '1',
-      locale: 'id',
+      interval: "D",
+      timezone: "Asia/Jakarta",
+      theme: "dark",
+      style: "1",
+      locale: "id",
       autosize: true,
       container_id: 'tradingview-chart',
     };
 
     widgetRef.current = new window.TradingView.widget(widgetOptions);
-
-    return () => {
-      if (widgetRef.current?.remove) widgetRef.current.remove();
-    };
+    return () => widgetRef.current?.remove?.();
   }, [symbol]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.TradingView) return;
-
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
-    script.id = 'tradingview-script';
-
-    document.head.appendChild(script);
-
-    return () => {
-      const existingScript = document.getElementById('tradingview-script');
-      if (existingScript) document.head.removeChild(existingScript);
-    };
+    if (typeof window !== 'undefined' && !window.TradingView) {
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/tv.js';
+      script.async = true;
+      document.head.appendChild(script);
+      return () => document.head.removeChild(script);
+    }
   }, []);
 
   return <div id="tradingview-chart" ref={containerRef} className="tv-chart" />;
@@ -63,15 +51,7 @@ const TradingDiary = () => {
     }
   });
 
-  const [form, setForm] = useState({
-    date: '',
-    ticker: '',
-    entry: '',
-    exit: '',
-    reason: '',
-    emotion: '',
-  });
-
+  const [form, setForm] = useState({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   const [ticker, setTicker] = useState('BBCA');
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
@@ -98,9 +78,9 @@ const TradingDiary = () => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [name]: value }));
     if (name === 'ticker') setTicker(value.toUpperCase());
   };
 
@@ -110,29 +90,25 @@ const TradingDiary = () => {
 
     const entryNum = parseFloat(entry);
     const exitNum = parseFloat(exit);
-    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0)
-      return alert('Entry dan Exit harus angka positif.');
+    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0) return alert('Entry dan Exit harus angka positif.');
 
-    setEntries((prev) => [...prev, { ...form, entry: entryNum, exit: exitNum }]);
+    setEntries(prev => [...prev, { ...form, entry: entryNum, exit: exitNum }]);
     setForm({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   };
 
-  const handleDelete = (idx) => {
+  const handleDelete = idx => {
     if (window.confirm('Yakin hapus entri ini?')) {
-      setEntries((prev) => prev.filter((_, i) => i !== idx));
+      setEntries(prev => prev.filter((_, i) => i !== idx));
     }
   };
 
-  const stats = entries.reduce(
-    (acc, e) => {
-      const gain = e.exit - e.entry;
-      acc.total++;
-      acc.gain += gain;
-      if (gain > 0) acc.wins++;
-      return acc;
-    },
-    { total: 0, gain: 0, wins: 0 }
-  );
+  const stats = entries.reduce((acc, e) => {
+    const gain = e.exit - e.entry;
+    acc.total++;
+    acc.gain += gain;
+    if (gain > 0) acc.wins++;
+    return acc;
+  }, { total: 0, gain: 0, wins: 0 });
 
   const winRate = stats.total ? (stats.wins / stats.total) * 100 : 0;
 
@@ -150,43 +126,31 @@ const TradingDiary = () => {
         <button onClick={handleAdd}>+ Tambah Entry</button>
       </div>
 
-      <div className="main-dashboard">
-        <div className="groq-analysis-box">
+      <div className="content-row">
+        <div className="groq-panel">
           <h3>Analisis Groq:</h3>
           <p>{groqAnalysis}</p>
         </div>
 
-        <TVChart symbol={`IDX:${ticker}`} />
+        <div className="chart-center">
+          <TVChart symbol={`IDX:${ticker}`} />
+          <div className="summary-dashboard-container">
+            <div className="summary-card"><h2>Total Trade</h2><p>{stats.total}</p></div>
+            <div className="summary-card"><h2>Win Rate</h2><p>{winRate.toFixed(1)}%</p></div>
+            <div className="summary-card"><h2>Gain/Loss</h2><p style={{ color: stats.gain >= 0 ? 'limegreen' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p></div>
+          </div>
+        </div>
 
         <SignalDashboard
-          ema20={50}
-          ema50={45}
-          ema20Prev={48}
-          ema50Prev={46}
-          ema20_1W={49}
-          ema50_1W={47}
-          rsi={60}
-          macdLine={1.5}
-          signalLine={1.2}
-          macdLine_4H={0.5}
-          signalLine_4H={0.4}
-          plusDI={25}
-          minusDI={15}
-          adx={30}
-          atrPct={1.8}
-          kalman={form.entry || 100}
-          close={form.exit || 105}
+          ema20={50} ema50={45} ema20Prev={48} ema50Prev={46} ema20_1W={49} ema50_1W={47}
+          rsi={60} macdLine={1.5} signalLine={1.2} macdLine_4H={0.5} signalLine_4H={0.4}
+          plusDI={25} minusDI={15} adx={30} atrPct={1.8}
+          kalman={form.entry || 100} close={form.exit || 105}
           groqAnalysis={groqAnalysis}
         />
       </div>
 
-      <div className="summary-dashboard-container">
-        <div className="summary-card"><h2>Total Trade</h2><p>{stats.total}</p></div>
-        <div className="summary-card"><h2>Win Rate</h2><p>{winRate.toFixed(1)}%</p></div>
-        <div className="summary-card"><h2>Gain/Loss</h2><p style={{ color: stats.gain >= 0 ? 'lime' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p></div>
-      </div>
-
-      <button className="toggle-table-btn" onClick={() => setShowTable((p) => !p)}>
+      <button className="toggle-table-btn" onClick={() => setShowTable(p => !p)}>
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
       </button>
 
@@ -194,14 +158,7 @@ const TradingDiary = () => {
         <table>
           <thead>
             <tr>
-              <th>Tanggal</th>
-              <th>Ticker</th>
-              <th>Entry</th>
-              <th>Exit</th>
-              <th>Profit</th>
-              <th>Alasan</th>
-              <th>Emosi</th>
-              <th>Aksi</th>
+              <th>Tanggal</th><th>Ticker</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Alasan</th><th>Emosi</th><th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -211,7 +168,7 @@ const TradingDiary = () => {
                 <td>{e.ticker}</td>
                 <td>{e.entry.toFixed(2)}</td>
                 <td>{e.exit.toFixed(2)}</td>
-                <td style={{ color: e.exit - e.entry >= 0 ? 'lime' : 'red' }}>{(e.exit - e.entry).toFixed(2)}</td>
+                <td style={{ color: e.exit - e.entry >= 0 ? 'limegreen' : 'red' }}>{(e.exit - e.entry).toFixed(2)}</td>
                 <td>{e.reason}</td>
                 <td>{e.emotion}</td>
                 <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
