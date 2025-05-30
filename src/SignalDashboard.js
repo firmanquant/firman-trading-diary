@@ -1,58 +1,141 @@
-// SignalDashboard.js (final presisi produksi, responsif & sinkron layout)
-import React, { useEffect, useState } from 'react';
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #111;
+  color: #f0f0f0;
+}
 
-const SignalDashboard = ({
-  rsi,
-  macdLine,
-  signalLine,
-  macdLine_4H,
-  signalLine_4H,
-  plusDI,
-  minusDI,
-  adx,
-  atrPct,
-  kalman,
-  ema20,
-  ema50,
-  ema20Prev,
-  ema50Prev,
-  ema20_1W,
-  ema50_1W,
-  groqAnalysis,
-  symbol
-}) => {
-  const [localGroq, setLocalGroq] = useState(groqAnalysis || '');
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 16px;
+}
 
-  useEffect(() => {
-    setLocalGroq(groqAnalysis || '');
-  }, [groqAnalysis]);
+h1.title {
+  text-align: center;
+  color: #4fc3f7;
+  margin-bottom: 16px;
+}
 
-  const macdTrend = macdLine > signalLine ? 'Bullish' : 'Bearish';
-  const macd4HTrend = macdLine_4H > signalLine_4H ? 'Bullish' : 'Bearish';
-  const emaTrend = ema20 > ema50 ? 'Uptrend' : 'Downtrend';
-  const prevEmaTrend = ema20Prev > ema50Prev ? 'Uptrend' : 'Downtrend';
-  const weeklyTrend = ema20_1W > ema50_1W ? 'Bullish' : 'Bearish';
-  const diTrend = plusDI > minusDI ? '+DI Dominan' : '-DI Dominan';
-  const signal = (macdTrend === 'Bullish' && emaTrend === 'Uptrend' && adx > 20) ? 'BELI ✅' : 'TIDAK ADA';
-  const atrStatus = atrPct > 3 ? 'Volatile' : 'Normal';
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-  return (
-    <div className="signal-dashboard">
-      <h3>📊 Dashboard Mini</h3>
-      <div className="signal-grid">
-        <div><strong>Sinyal:</strong> {signal}</div>
-        <div><strong>MACD:</strong> {macdTrend} <span className="dot" /></div>
-        <div><strong>ADX:</strong> {adx}</div>
-        <div><strong>4H MACD:</strong> {macd4HTrend} <span className="dot" /></div>
-        <div><strong>EMA Trend:</strong> {emaTrend} <span className="dot" /></div>
-        <div><strong>DI+/DI-:</strong> {diTrend} <span className="dot" /></div>
-        <div><strong>ATR:</strong> {atrPct}% {atrStatus} <span className="dot" /></div>
-        <div><strong>RSI:</strong> {rsi}</div>
-        <div><strong>Trend 1W:</strong> {weeklyTrend} <span className="dot" /></div>
-        <div><strong>Kalman Diff:</strong> {kalman}</div>
-      </div>
-    </div>
-  );
-};
+.form input {
+  padding: 8px;
+  font-size: 14px;
+  background-color: #222;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 4px;
+}
 
-export default SignalDashboard;
+.form button {
+  background-color: #2ecc71;
+  border: none;
+  padding: 8px 16px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tv-chart {
+  width: 100%;
+  min-height: 500px;
+}
+
+.summary-dashboard-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+.summary-card {
+  background-color: #1a1a1a;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.summary-card h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.summary-card p {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.toggle-table-btn {
+  display: block;
+  margin: 0 auto;
+  margin-bottom: 12px;
+  background-color: #2ecc71;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+thead th {
+  background-color: #222;
+  padding: 10px;
+  border-bottom: 2px solid #444;
+}
+
+tbody td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+.analysis-wrapper {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.groq-box {
+  flex: 1;
+  background-color: #1c1c1c;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 30%;
+}
+
+.mini-dashboard-box {
+  flex: 1;
+  background-color: #1c1c1c;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 30%;
+}
+
+.tv-chart {
+  flex: 2;
+  min-height: 500px;
+  max-width: 40%;
+}
