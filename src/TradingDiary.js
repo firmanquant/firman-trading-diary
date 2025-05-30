@@ -1,4 +1,3 @@
-// pages/TradingDiary.js
 import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
@@ -13,49 +12,83 @@ const TradingDiary = () => {
   const [emotion, setEmotion] = useState('');
   const [entries, setEntries] = useState([]);
   const [showTable, setShowTable] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const perPage = 20;
-
   const containerRef = useRef(null);
 
-  // Load from localStorage
+  const itemsPerPage = 20;
+
+  // Restore from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('trading-diary-entries');
-    if (saved) setEntries(JSON.parse(saved));
+    const saved = localStorage.getItem('trading-entries');
+    if (saved) {
+      setEntries(JSON.parse(saved));
+    }
   }, []);
 
-  // Save to localStorage on update
+  // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('trading-diary-entries', JSON.stringify(entries));
+    localStorage.setItem('trading-entries', JSON.stringify(entries));
   }, [entries]);
 
-  // Fetch dummy Groq
+  const handleSave = () => {
+    if (!symbol || !entry || !exit) return;
+    const newEntry = {
+      date: date.toLocaleDateString('id-ID'),
+      symbol,
+      entry: parseFloat(entry),
+      exit: parseFloat(exit),
+      reason: reason || 'x',
+      emotion: emotion || 'x'
+    };
+    setEntries([newEntry, ...entries]);
+    setSymbol('');
+    setEntry('');
+    setExit('');
+    setReason('');
+    setEmotion('');
+    setShowTable(true);
+  };
+
+  const handleDelete = (index) => {
+    const updated = [...entries];
+    updated.splice(index + (currentPage - 1) * itemsPerPage, 1);
+    setEntries(updated);
+  };
+
+  const fetchGroq = async () => {
+    try {
+      const res = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `Analisis saham ${symbol}` }),
+      });
+      const data = await res.json();
+      setGroqAnalysis(data.response || 'Gagal memuat analisis.');
+    } catch (err) {
+      setGroqAnalysis('Gagal memuat analisis.');
+    }
+  };
+
+  const fetchSignal = async () => {
+    try {
+      const res = await fetch(`/api/signal?symbol=${symbol}`);
+      const data = await res.json();
+      setSignalData(data);
+    } catch (err) {
+      setSignalData(null);
+    }
+  };
+
   useEffect(() => {
-    if (!symbol) return;
-    fetch('/api/groq', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: `Analisa teknikal saham ${symbol}` }),
-    })
-      .then(res => res.json())
-      .then(data => setGroqAnalysis(data.response || 'Tidak tersedia'));
+    if (symbol.length < 1) return;
+    fetchGroq();
+    fetchSignal();
   }, [symbol]);
 
-  // Fetch dummy Signal
   useEffect(() => {
-    if (!symbol || symbol.length < 2) return;
-    fetch(`/api/signal?symbol=${symbol}`)
-      .then(res => res.json())
-      .then(data => setSignalData(data))
-      .catch(() => setSignalData(null));
-  }, [symbol]);
-
-  // Load TradingView chart
-  useEffect(() => {
-    if (!window.TradingView || !containerRef.current || !symbol) return;
+    if (!window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
     new window.TradingView.widget({
       autosize: true,
@@ -69,96 +102,97 @@ const TradingDiary = () => {
     });
   }, [symbol]);
 
-  const handleSave = () => {
-    const newEntry = {
-      date,
-      symbol,
-      entry: parseFloat(entry),
-      exit: parseFloat(exit),
-      reason,
-      emotion,
-    };
-    setEntries([newEntry, ...entries]);
-    setSymbol('');
-    setEntry('');
-    setExit('');
-    setReason('');
-    setEmotion('');
-  };
+  // Summary Calculation
+  const totalTrade = entries.length;
+  const winRate =
+    entries.length > 0
+      ? (
+          (entries.filter((e) => e.exit > e.entry).length / entries.length) *
+          100
+        ).toFixed(1)
+      : 0;
+  const gainLoss = entries
+    .reduce((sum, e) => sum + (e.exit - e.entry), 0)
+    .toFixed(2);
 
-  const handleDelete = (index) => {
-    const updated = entries.filter((_, i) => i !== index);
-    setEntries(updated);
-  };
-
-  const total = entries.length;
-  const winCount = entries.filter(e => e.exit > e.entry).length;
-  const gainLoss = entries.reduce((sum, e) => sum + (e.exit - e.entry), 0);
-  const winRate = total ? (winCount / total * 100).toFixed(1) : 0;
-
-  const paginated = entries.slice((currentPage - 1) * perPage, currentPage * perPage);
-  const totalPages = Math.ceil(total / perPage);
+  // Pagination
+  const pageCount = Math.ceil(entries.length / itemsPerPage);
+  const paginatedEntries = entries.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="container">
-      <h1 style={{ textAlign: 'center', color: '#39f' }}>Firman Trading Diary</h1>
-      <div className="form" style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+      <h1 className="title">Firman Trading Diary</h1>
+      <div className="form">
         <DatePicker selected={date} onChange={(d) => setDate(d)} />
-        <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" />
+        <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="Kode Saham" />
         <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Entry" />
         <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" />
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" />
         <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" />
-        <button onClick={handleSave} style={{ background: 'green', color: '#fff' }}>Simpan</button>
-        <button onClick={() => setShowTable(!showTable)} style={{ background: '#0c0', color: '#fff' }}>
-          {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
-        </button>
+        <button onClick={handleSave}>Simpan</button>
       </div>
 
-      {/* Layout 3 kolom */}
-      <div className="content" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <div className="left" style={{ flex: 1 }}>
-          <p><strong>🧠 Analisis Groq</strong></p>
-          <pre style={{ background: '#222', padding: 10, color: '#0f0' }}>{groqAnalysis}</pre>
+      <button className="toggle-table-btn" onClick={() => setShowTable(!showTable)}>
+        {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
+      </button>
+
+      <div className="analysis-layout">
+        <div className="groq-box">
+          <h3>🧠 Analisis Groq</h3>
+          <p>{groqAnalysis}</p>
         </div>
-        <div className="middle" style={{ flex: 2 }}>
-          <p><strong>📊 Chart</strong></p>
+        <div className="tv-chart">
+          <h3>📊 Chart</h3>
           <div ref={containerRef} style={{ height: '400px' }} />
         </div>
-        <div className="right" style={{ flex: 1 }}>
-          <p><strong>📈 Dashboard Mini</strong></p>
-          {signalData && <SignalDashboard {...signalData} />}
+        <div className="dashboard-box">
+          {signalData && <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />}
         </div>
       </div>
 
       {showTable && (
         <>
-          <div style={{ marginTop: 20 }}>
-            <p><strong>📉 Ringkasan:</strong></p>
-            <ul>
-              <li>Total Trade: {total}</li>
-              <li>Win Rate: {winRate}%</li>
-              <li>Gain/Loss: {gainLoss.toFixed(2)}</li>
-            </ul>
+          <div className="summary-dashboard-container">
+            <div className="summary-card">
+              <h2>Total Trade</h2>
+              <p>{totalTrade}</p>
+            </div>
+            <div className="summary-card">
+              <h2>Win Rate</h2>
+              <p>{winRate}%</p>
+            </div>
+            <div className="summary-card">
+              <h2>Gain/Loss</h2>
+              <p>{gainLoss}</p>
+            </div>
           </div>
 
-          <table style={{ width: '100%', marginTop: 10, borderCollapse: 'collapse' }}>
+          <table>
             <thead>
-              <tr style={{ background: '#111', color: '#fff' }}>
-                <th>Tanggal</th><th>Kode</th><th>Entry</th><th>Exit</th><th>Alasan</th><th>Emosi</th><th>Hapus</th>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kode</th>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Alasan</th>
+                <th>Emosi</th>
+                <th>Hapus</th>
               </tr>
             </thead>
             <tbody>
-              {paginated.map((e, i) => (
-                <tr key={i} style={{ textAlign: 'center' }}>
-                  <td>{new Date(e.date).toLocaleDateString('id-ID')}</td>
-                  <td>{e.symbol}</td>
-                  <td>{e.entry}</td>
-                  <td>{e.exit}</td>
-                  <td>{e.reason}</td>
-                  <td>{e.emotion}</td>
+              {paginatedEntries.map((item, idx) => (
+                <tr key={idx}>
+                  <td>{item.date}</td>
+                  <td>{item.symbol}</td>
+                  <td>{item.entry}</td>
+                  <td>{item.exit}</td>
+                  <td>{item.reason}</td>
+                  <td>{item.emotion}</td>
                   <td>
-                    <button onClick={() => handleDelete((currentPage - 1) * perPage + i)} style={{ background: '#f44', color: '#fff' }}>
+                    <button onClick={() => handleDelete(idx)} style={{ backgroundColor: '#ff4d4d', color: 'white' }}>
                       Hapus
                     </button>
                   </td>
@@ -167,18 +201,18 @@ const TradingDiary = () => {
             </tbody>
           </table>
 
-          {/* Pagination */}
-          <div style={{ marginTop: 10, textAlign: 'center' }}>
-            {Array.from({ length: totalPages }, (_, i) => (
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            {Array.from({ length: pageCount }, (_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
                 style={{
-                  margin: 3,
-                  background: i + 1 === currentPage ? '#09f' : '#333',
-                  color: '#fff',
+                  margin: '0 5px',
+                  backgroundColor: currentPage === i + 1 ? '#4fc3f7' : '#222',
+                  color: 'white',
+                  padding: '6px 10px',
                   border: 'none',
-                  padding: '5px 10px',
+                  borderRadius: '4px',
                 }}
               >
                 {i + 1}
