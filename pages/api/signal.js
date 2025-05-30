@@ -1,32 +1,14 @@
-// pages/api/signal.js
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { symbol } = req.query;
 
-  if (!symbol) {
-    return res.status(400).json({ error: 'Symbol is required' });
-  }
-
-  // Simulasi dummy data — kamu bisa ganti dengan fetch API/data asli nanti
-  const response = {
-    ema20: 5000,
-    ema50: 5100,
-    ema20Prev: 5050,
-    ema50Prev: 5150,
-    ema20_1W: 4950,
-    ema50_1W: 5200,
-    rsi: 45,
-    macdLine: -10,
-    signalLine: -5,
-    macdLine_4H: -3,
-    signalLine_4H: -4,
-    plusDI: 18,
-    minusDI: 25,
-    adx: 22,
-    atrPct: 2.5,
-    kalman: 5001,
-    close: 4998,
+  const dummySignal = {
+    symbol: symbol || 'BBCA',
+    signal: 'BUY',
+    strength: 'STRONG',
+    lastPrice: 5925,
+    support: 5800,
+    resistance: 6150,
   };
 
-  res.status(200).json(response);
+  res.status(200).json(dummySignal);
 }
