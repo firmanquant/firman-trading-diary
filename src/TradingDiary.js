@@ -1,10 +1,8 @@
-// TradingDiary.js (FINAL VERSION)
+// pages/TradingDiary.js
 import 'react-datepicker/dist/react-datepicker.css';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import SignalDashboard from './SignalDashboard';
-
-const PAGE_SIZE = 20;
 
 const TradingDiary = () => {
   const [date, setDate] = useState(new Date());
@@ -17,34 +15,51 @@ const TradingDiary = () => {
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 20;
 
   const containerRef = useRef(null);
 
-  // Load TradingView widget script
+  // Load from localStorage
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
-  // Load entries from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('entries');
+    const saved = localStorage.getItem('trading-diary-entries');
     if (saved) setEntries(JSON.parse(saved));
   }, []);
 
+  // Save to localStorage on update
   useEffect(() => {
-    localStorage.setItem('entries', JSON.stringify(entries));
+    localStorage.setItem('trading-diary-entries', JSON.stringify(entries));
   }, [entries]);
 
+  // Fetch dummy Groq
   useEffect(() => {
-    if (!window.TradingView || !containerRef.current) return;
+    if (!symbol) return;
+    fetch('/api/groq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: `Analisa teknikal saham ${symbol}` }),
+    })
+      .then(res => res.json())
+      .then(data => setGroqAnalysis(data.response || 'Tidak tersedia'));
+  }, [symbol]);
+
+  // Fetch dummy Signal
+  useEffect(() => {
+    if (!symbol || symbol.length < 2) return;
+    fetch(`/api/signal?symbol=${symbol}`)
+      .then(res => res.json())
+      .then(data => setSignalData(data))
+      .catch(() => setSignalData(null));
+  }, [symbol]);
+
+  // Load TradingView chart
+  useEffect(() => {
+    if (!window.TradingView || !containerRef.current || !symbol) return;
     containerRef.current.innerHTML = '';
     new window.TradingView.widget({
       autosize: true,
-      symbol: `IDX:${symbol || 'BBCA'}`,
+      symbol: `IDX:${symbol}`,
       interval: 'D',
       timezone: 'Asia/Jakarta',
       theme: 'dark',
@@ -54,30 +69,15 @@ const TradingDiary = () => {
     });
   }, [symbol]);
 
-  useEffect(() => {
-    async function fetchSignal() {
-      const res = await fetch(`/api/signal?symbol=${symbol}`);
-      const data = await res.json();
-      setSignalData(data);
-    }
-    if (symbol) fetchSignal();
-  }, [symbol]);
-
-  useEffect(() => {
-    async function fetchGroq() {
-      const res = await fetch('/api/groq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `Analisis teknikal untuk ${symbol}` }),
-      });
-      const data = await res.json();
-      setGroqAnalysis(data.response || 'Gagal memuat analisis.');
-    }
-    if (symbol) fetchGroq();
-  }, [symbol]);
-
-  const saveEntry = () => {
-    const newEntry = { date, symbol, entry, exit, reason, emotion };
+  const handleSave = () => {
+    const newEntry = {
+      date,
+      symbol,
+      entry: parseFloat(entry),
+      exit: parseFloat(exit),
+      reason,
+      emotion,
+    };
     setEntries([newEntry, ...entries]);
     setSymbol('');
     setEntry('');
@@ -86,96 +86,106 @@ const TradingDiary = () => {
     setEmotion('');
   };
 
-  const deleteEntry = (index) => {
-    const newList = entries.filter((_, i) => i !== index);
-    setEntries(newList);
+  const handleDelete = (index) => {
+    const updated = entries.filter((_, i) => i !== index);
+    setEntries(updated);
   };
 
-  const paginated = entries.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+  const total = entries.length;
+  const winCount = entries.filter(e => e.exit > e.entry).length;
+  const gainLoss = entries.reduce((sum, e) => sum + (e.exit - e.entry), 0);
+  const winRate = total ? (winCount / total * 100).toFixed(1) : 0;
+
+  const paginated = entries.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const totalPages = Math.ceil(total / perPage);
 
   return (
     <div className="container">
-      <h1 className="title">Firman Trading Diary</h1>
-      <div className="form">
+      <h1 style={{ textAlign: 'center', color: '#39f' }}>Firman Trading Diary</h1>
+      <div className="form" style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
         <DatePicker selected={date} onChange={(d) => setDate(d)} />
-        <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="Kode Saham" />
+        <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" />
         <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Entry" />
         <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" />
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" />
         <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" />
-        <button onClick={saveEntry}>Simpan</button>
-        <button onClick={() => setShowTable(!showTable)}>
+        <button onClick={handleSave} style={{ background: 'green', color: '#fff' }}>Simpan</button>
+        <button onClick={() => setShowTable(!showTable)} style={{ background: '#0c0', color: '#fff' }}>
           {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
         </button>
       </div>
 
-      {/* Layout 3 Kolom */}
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <div style={{ flex: 1 }}>
+      {/* Layout 3 kolom */}
+      <div className="content" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+        <div className="left" style={{ flex: 1 }}>
           <p><strong>🧠 Analisis Groq</strong></p>
           <pre style={{ background: '#222', padding: 10, color: '#0f0' }}>{groqAnalysis}</pre>
         </div>
-
-        <div style={{ flex: 2 }}>
+        <div className="middle" style={{ flex: 2 }}>
           <p><strong>📊 Chart</strong></p>
-          <div ref={containerRef} style={{ height: '400px', background: '#111' }} />
+          <div ref={containerRef} style={{ height: '400px' }} />
         </div>
-
-        <div style={{ flex: 1 }}>
+        <div className="right" style={{ flex: 1 }}>
           <p><strong>📈 Dashboard Mini</strong></p>
           {signalData && <SignalDashboard {...signalData} />}
         </div>
       </div>
 
-      {/* Ringkasan */}
       {showTable && (
-        <div style={{ marginTop: '30px' }}>
-          <h3>📊 Ringkasan:</h3>
-          <ul>
-            <li>Total Trade: {entries.length}</li>
-            <li>Win Rate: {((entries.filter(e => parseFloat(e.exit) > parseFloat(e.entry)).length / entries.length) * 100).toFixed(1)}%</li>
-            <li>Gain/Loss: {
-              entries.reduce((acc, e) => acc + (parseFloat(e.exit) - parseFloat(e.entry)), 0).toFixed(2)
-            }</li>
-          </ul>
+        <>
+          <div style={{ marginTop: 20 }}>
+            <p><strong>📉 Ringkasan:</strong></p>
+            <ul>
+              <li>Total Trade: {total}</li>
+              <li>Win Rate: {winRate}%</li>
+              <li>Gain/Loss: {gainLoss.toFixed(2)}</li>
+            </ul>
+          </div>
 
-          <table style={{ width: '100%', color: 'white', marginTop: '10px' }}>
+          <table style={{ width: '100%', marginTop: 10, borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Kode</th>
-                <th>Entry</th>
-                <th>Exit</th>
-                <th>Alasan</th>
-                <th>Emosi</th>
-                <th>Hapus</th>
+              <tr style={{ background: '#111', color: '#fff' }}>
+                <th>Tanggal</th><th>Kode</th><th>Entry</th><th>Exit</th><th>Alasan</th><th>Emosi</th><th>Hapus</th>
               </tr>
             </thead>
             <tbody>
-              {paginated.map((item, i) => (
-                <tr key={i}>
-                  <td>{new Date(item.date).toLocaleDateString()}</td>
-                  <td>{item.symbol}</td>
-                  <td>{item.entry}</td>
-                  <td>{item.exit}</td>
-                  <td>{item.reason}</td>
-                  <td>{item.emotion}</td>
-                  <td><button onClick={() => deleteEntry(i)}>Hapus</button></td>
+              {paginated.map((e, i) => (
+                <tr key={i} style={{ textAlign: 'center' }}>
+                  <td>{new Date(e.date).toLocaleDateString('id-ID')}</td>
+                  <td>{e.symbol}</td>
+                  <td>{e.entry}</td>
+                  <td>{e.exit}</td>
+                  <td>{e.reason}</td>
+                  <td>{e.emotion}</td>
+                  <td>
+                    <button onClick={() => handleDelete((currentPage - 1) * perPage + i)} style={{ background: '#f44', color: '#fff' }}>
+                      Hapus
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           {/* Pagination */}
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginTop: 10, textAlign: 'center' }}>
             {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i} onClick={() => setCurrentPage(i + 1)} style={{ margin: '0 5px' }}>
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  margin: 3,
+                  background: i + 1 === currentPage ? '#09f' : '#333',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '5px 10px',
+                }}
+              >
                 {i + 1}
               </button>
             ))}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
