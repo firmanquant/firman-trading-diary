@@ -1,3 +1,4 @@
+// src/SignalDashboard.js
 import React from 'react';
 
 const SignalDashboard = ({
@@ -6,7 +7,7 @@ const SignalDashboard = ({
   rsi, macdLine, signalLine,
   macdLine_4H, signalLine_4H,
   plusDI, minusDI, adx, atrPct,
-  kalman, close, groqAnalysis
+  kalman, groqAnalysis
 }) => {
   const isBullish = macdLine > signalLine;
   const isBullish4H = macdLine_4H > signalLine_4H;
@@ -23,24 +24,20 @@ const SignalDashboard = ({
   ) ? 'BELI ✅' : 'TIDAK ADA';
 
   return (
-    <div className="dashboard-wrapper">
+    <div className="analysis-layout">
       <div className="dashboard-box">
         <h3>📊 Dashboard Mini</h3>
         <div className="dashboard-grid">
-          <div>
-            <p><strong>Sinyal:</strong> {signal}</p>
-            <p><strong>MACD:</strong> {isBullish ? 'Bullish 🟢' : 'Bearish 🔴'}</p>
-            <p><strong>4H MACD:</strong> {isBullish4H ? 'Bullish 🟢' : 'Bearish 🔴'}</p>
-            <p><strong>EMA Trend:</strong> {emaTrend}</p>
-            <p><strong>Trend 1W:</strong> {trend1W}</p>
-          </div>
-          <div>
-            <p><strong>DI+/DI-:</strong> {diTrend}</p>
-            <p><strong>ADX:</strong> {adx}</p>
-            <p><strong>ATR:</strong> {atrPct}% {atrLabel}</p>
-            <p><strong>RSI:</strong> {rsi}</p>
-            <p><strong>Kalman:</strong> {kalman}</p>
-          </div>
+          <div><strong>Sinyal:</strong> {signal}</div>
+          <div><strong>MACD:</strong> {isBullish ? 'Bullish 🟢' : 'Bearish 🔴'}</div>
+          <div><strong>ADX:</strong> {adx}</div>
+          <div><strong>4H MACD:</strong> {isBullish4H ? 'Bullish 🟢' : 'Bearish 🔴'}</div>
+          <div><strong>EMA Trend:</strong> {emaTrend}</div>
+          <div><strong>DI+/DI-:</strong> {diTrend}</div>
+          <div><strong>ATR:</strong> {atrPct}% {atrLabel}</div>
+          <div><strong>RSI:</strong> {rsi}</div>
+          <div><strong>Trend 1W:</strong> {trend1W}</div>
+          <div><strong>Kalman Diff:</strong> {kalman}</div>
         </div>
       </div>
 
