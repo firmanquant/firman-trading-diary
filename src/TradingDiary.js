@@ -1,105 +1,86 @@
-// TradingDiary.js (Final Layout Presisi)
-import React, { useState, useEffect, useRef } from 'react';
+// TradingDiary.js (FINAL - Perbaikan Total)
+import React, { useState, useRef, useEffect } from 'react';
 import SignalDashboard from './SignalDashboard';
 
-const TVChart = ({ symbol = 'IDX:BBCA' }) => {
+const TradingDiary = () => {
+  const [symbol, setSymbol] = useState('BBCA');
+  const [entry, setEntry] = useState('');
+  const [exit, setExit] = useState('');
+  const [reason, setReason] = useState('');
+  const [emotion, setEmotion] = useState('');
+  const [entries, setEntries] = useState([]);
+  const [showTable, setShowTable] = useState(false);
+  const [groqAnalysis, setGroqAnalysis] = useState('');
+
   const containerRef = useRef(null);
   const widgetRef = useRef(null);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const container = containerRef.current;
-    if (!container || !window.TradingView) return;
-    container.innerHTML = '';
+  const fullSymbol = `IDX:${symbol}`;
 
+  useEffect(() => {
+    if (!window.TradingView || !containerRef.current) return;
+    containerRef.current.innerHTML = '';
     widgetRef.current = new window.TradingView.widget({
-      symbol,
+      symbol: fullSymbol,
       interval: 'D',
-      timezone: 'Asia/Jakarta',
+      container_id: 'tv-container',
       theme: 'dark',
-      style: '1',
       locale: 'id',
       autosize: true,
-      container_id: 'tv-container',
     });
+    return () => widgetRef.current?.remove();
+  }, [fullSymbol]);
 
-    return () => {
-      if (widgetRef.current?.remove) widgetRef.current.remove();
-    };
-  }, [symbol]);
-
-  return <div id="tv-container" className="tv-chart" ref={containerRef} />;
-};
-
-const TradingDiary = () => {
-  const [symbol, setSymbol] = useState('IDX:BBCA');
-
-  const fakeData = {
-    ema20: 50,
-    ema50: 45,
-    ema20Prev: 48,
-    ema50Prev: 43,
-    ema20_1W: 60,
-    ema50_1W: 50,
-    rsi: 60,
-    macdLine: 2,
-    signalLine: 1.5,
-    macdLine_4H: 1.8,
-    signalLine_4H: 1.4,
-    plusDI: 25,
-    minusDI: 15,
-    adx: 30,
-    atrPct: 1.8,
-    kalman: 100,
-    close: 50,
-    groqAnalysis: '',
+  const handleAddEntry = () => {
+    if (!symbol || !entry || !exit) return;
+    const gainLoss = ((exit - entry) / entry) * 100;
+    setEntries(prev => [...prev, {
+      date: new Date().toLocaleDateString('id-ID'),
+      symbol,
+      entry: parseFloat(entry),
+      exit: parseFloat(exit),
+      gainLoss: gainLoss.toFixed(2),
+      reason,
+      emotion
+    }]);
+    setEntry('');
+    setExit('');
+    setReason('');
+    setEmotion('');
   };
+
+  const totalTrade = entries.length;
+  const winRate = totalTrade > 0 ? entries.filter(e => e.gainLoss > 0).length / totalTrade * 100 : 0;
+  const totalGain = entries.reduce((acc, e) => acc + parseFloat(e.gainLoss), 0);
 
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
-        <input
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          placeholder="Masukkan simbol (mis. IDX:BBCA)"
-        />
-        <button onClick={() => {}}>+ Tambah Entry</button>
+        <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="Ticker" />
+        <input value={entry} onChange={e => setEntry(e.target.value)} placeholder="Entry" type="number" />
+        <input value={exit} onChange={e => setExit(e.target.value)} placeholder="Exit" type="number" />
+        <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Alasan" />
+        <input value={emotion} onChange={e => setEmotion(e.target.value)} placeholder="Emosi" />
+        <button onClick={handleAddEntry}>+ Tambah Entry</button>
       </div>
 
-      {/* Ringkasan Performa */}
       <div className="summary-dashboard-container">
         <div className="summary-card">
           <h2>Total Trade</h2>
-          <p>0</p>
+          <p>{totalTrade}</p>
         </div>
         <div className="summary-card">
           <h2>Win Rate</h2>
-          <p>0.0%</p>
+          <p>{winRate.toFixed(1)}%</p>
         </div>
         <div className="summary-card">
           <h2>Gain/Loss</h2>
-          <p style={{ color: '#2ecc71' }}>+0.00</p>
+          <p style={{ color: totalGain >= 0 ? '#2ecc71' : '#e74c3c' }}>{totalGain.toFixed(2)}</p>
         </div>
       </div>
 
-      {/* Layout Grid: Analisis Groq | Chart | Dashboard Mini */}
       <div className="analysis-layout">
         <div className="groq-box">
-          <h3>🧠 Analisis Groq</h3>
-          <p>{fakeData.groqAnalysis || 'Gagal memuat analisis.'}</p>
-        </div>
-
-        <TVChart symbol={symbol} />
-
-        <div className="dashboard-box">
-          <SignalDashboard {...fakeData} />
-        </div>
-      </div>
-
-      <button className="toggle-table-btn">Tampilkan Tabel</button>
-    </div>
-  );
-};
-
-export default TradingDiary;
+          <h3>
