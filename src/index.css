@@ -108,7 +108,7 @@ tbody td {
   border-bottom: 1px solid #333;
 }
 
-/* FINAL LAYOUT GRID UNTUK: Groq | Chart | Dashboard */
+/* FINAL GRID: Groq | Chart (middle) | Dashboard */
 .analysis-layout {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
@@ -129,4 +129,8 @@ tbody td {
 .dashboard-box h3 {
   margin-bottom: 8px;
   color: #4fc3f7;
+}
+
+.chart-placeholder {
+  /* Spacer tengah untuk Chart, tidak perlu konten karena Chart ditanam terpisah */
 }
