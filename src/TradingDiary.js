@@ -1,8 +1,8 @@
 // TradingDiary.js (FINAL VERSION)
+import 'react-datepicker/dist/react-datepicker.css'; // ✅ hanya sekali
 import React, { useState, useRef, useEffect } from 'react';
 import SignalDashboard from './SignalDashboard';
 import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 
 const TradingDiary = () => {
   const [date, setDate] = useState(new Date());
