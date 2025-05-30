@@ -1,4 +1,4 @@
-// TradingDiary.js (FINAL VERSION with working signal + groq)
+// TradingDiary.js (FINAL VERSION with working signal + groq + layout fix)
 import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState, useRef, useEffect } from 'react';
 import SignalDashboard from './SignalDashboard';
@@ -18,7 +18,6 @@ const TradingDiary = () => {
 
   const containerRef = useRef(null);
 
-  // Fetch dummy signal data
   useEffect(() => {
     async function fetchSignal() {
       const res = await fetch(`/api/signal?symbol=${symbol}`);
@@ -28,7 +27,6 @@ const TradingDiary = () => {
     fetchSignal();
   }, [symbol]);
 
-  // Fetch Groq analysis
   useEffect(() => {
     async function fetchGroq() {
       const prompt = `Berikan analisis teknikal untuk saham ${symbol}`;
@@ -43,7 +41,6 @@ const TradingDiary = () => {
     fetchGroq();
   }, [symbol]);
 
-  // TradingView widget
   useEffect(() => {
     if (!window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
@@ -59,9 +56,15 @@ const TradingDiary = () => {
     });
   }, [symbol]);
 
+  const handleSave = () => {
+    const newEntry = { date, symbol, entry, exit, reason, emotion };
+    setEntries([...entries, newEntry]);
+  };
+
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
         <DatePicker selected={date} onChange={(d) => setDate(d)} />
         <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="Kode Saham" />
@@ -69,11 +72,43 @@ const TradingDiary = () => {
         <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" />
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" />
         <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" />
+        <button onClick={handleSave}>Simpan</button>
+        <button onClick={() => setShowTable(!showTable)}>
+          {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
+        </button>
       </div>
 
-      <div ref={containerRef} style={{ height: '400px', marginBottom: '20px' }} />
+      <div className="grid-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+        {signalData && <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />}
+        <div ref={containerRef} style={{ height: '400px' }} />
+      </div>
 
-      {signalData && <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />}
+      {showTable && (
+        <table className="entry-table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Kode</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>Alasan</th>
+              <th>Emosi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((item, idx) => (
+              <tr key={idx}>
+                <td>{item.date.toLocaleDateString()}</td>
+                <td>{item.symbol}</td>
+                <td>{item.entry}</td>
+                <td>{item.exit}</td>
+                <td>{item.reason}</td>
+                <td>{item.emotion}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
