@@ -1,3 +1,4 @@
+// src/SignalDashboard.js
 import React from 'react';
 
 const SignalDashboard = ({
@@ -24,11 +25,6 @@ const SignalDashboard = ({
 
   return (
     <div className="analysis-layout">
-      <div className="groq-box">
-        <h3>🧠 Analisis Groq</h3>
-        <p>{groqAnalysis || 'Gagal memuat analisis.'}</p>
-      </div>
-
       <div className="dashboard-box">
         <h3>📊 Dashboard Mini</h3>
         <p><strong>Sinyal:</strong> {signal}</p>
@@ -41,6 +37,11 @@ const SignalDashboard = ({
         <p><strong>RSI:</strong> {rsi}</p>
         <p><strong>Trend 1W:</strong> {trend1W}</p>
         <p><strong>Kalman Diff:</strong> {kalman}</p>
+      </div>
+
+      <div className="groq-box">
+        <h3>🧠 Analisis Groq</h3>
+        <p>{groqAnalysis || 'Gagal memuat analisis.'}</p>
       </div>
     </div>
   );
