@@ -14,113 +14,93 @@ const TradingDiary = () => {
   const [entries, setEntries] = useState([]);
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
-
   const containerRef = useRef(null);
 
+  const [signalData, setSignalData] = useState(null);
+
   useEffect(() => {
+    // Update TradingView widget
     if (!window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
     new window.TradingView.widget({
+      autosize: true,
       symbol: `IDX:${symbol}`,
       interval: 'D',
-      container_id: 'tv-container',
+      timezone: 'Asia/Jakarta',
       theme: 'dark',
+      style: '1',
       locale: 'id',
-      autosize: true,
+      container_id: containerRef.current,
     });
   }, [symbol]);
 
   useEffect(() => {
-    if (!symbol) return;
-    const fetchGroq = async () => {
+    // Fetch Signal data
+    const fetchSignals = async () => {
       try {
-        const res = await fetch(`/api/groq?symbol=${symbol}`);
-        const data = await res.text();
-        setGroqAnalysis(data);
+        const res = await fetch(`/api/signals?symbol=${symbol}`);
+        const json = await res.json();
+        setSignalData(json);
       } catch (err) {
-        setGroqAnalysis('Gagal memuat analisis.');
+        console.error('Error fetching signals:', err);
+        setSignalData(null);
       }
     };
-    fetchGroq();
+
+    // Fetch Groq analysis
+    const fetchGroq = async () => {
+      try {
+        const res = await fetch('/api/groq', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol }),
+        });
+        const json = await res.json();
+        setGroqAnalysis(json.analysis || '');
+      } catch (err) {
+        console.error('Groq error:', err);
+        setGroqAnalysis('');
+      }
+    };
+
+    if (symbol.length > 0) {
+      fetchSignals();
+      fetchGroq();
+    }
   }, [symbol]);
 
-  const handleAddEntry = () => {
-    if (!symbol || !entry || !exit) return;
-    const gainLoss = ((parseFloat(exit) - parseFloat(entry)) / parseFloat(entry)) * 100;
-    setEntries(prev => [...prev, {
-      date: date.toISOString().split('T')[0],
-      symbol: symbol.toUpperCase(),
-      entry: parseFloat(entry),
-      exit: parseFloat(exit),
-      gainLoss: gainLoss.toFixed(2),
-      reason,
-      emotion
-    }]);
+  const handleSubmit = () => {
+    const newEntry = { date, symbol, entry, exit, reason, emotion };
+    setEntries([...entries, newEntry]);
     setEntry('');
     setExit('');
     setReason('');
     setEmotion('');
   };
 
-  const handleDelete = (index) => {
-    setEntries(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const totalTrade = entries.length;
-  const winRate = totalTrade > 0 ? (entries.filter(e => parseFloat(e.gainLoss) > 0).length / totalTrade) * 100 : 0;
-  const totalGain = entries.reduce((acc, e) => acc + parseFloat(e.gainLoss), 0);
-
   return (
-    <div className="container">
-      <h1 className="title">Firman Trading Diary</h1>
+    <div className="p-4 bg-black text-white min-h-screen">
+      <h1 className="text-3xl font-bold text-center text-cyan-400 mb-4">📘 Firman Trading Diary</h1>
 
-      <div className="form">
-        <DatePicker selected={date} onChange={date => setDate(date)} dateFormat="dd/MM/yyyy" />
-        <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="Ticker" />
-        <input value={entry} onChange={e => setEntry(e.target.value)} placeholder="Entry" type="number" />
-        <input value={exit} onChange={e => setExit(e.target.value)} placeholder="Exit" type="number" />
-        <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Alasan" />
-        <input value={emotion} onChange={e => setEmotion(e.target.value)} placeholder="Emosi" />
-        <button onClick={handleAddEntry}>+ Tambah Entry</button>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <DatePicker selected={date} onChange={(d) => setDate(d)} className="text-black p-2 rounded" />
+        <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Symbol (e.g. BBRI)" className="p-2 text-black rounded" />
+        <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Entry" className="p-2 text-black rounded" />
+        <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" className="p-2 text-black rounded" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" className="p-2 text-black rounded" />
+        <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" className="p-2 text-black rounded" />
       </div>
 
-      <div className="summary-dashboard-container">
-        <div className="summary-card"><h2>Total Trade</h2><p>{totalTrade}</p></div>
-        <div className="summary-card"><h2>Win Rate</h2><p>{winRate.toFixed(1)}%</p></div>
-        <div className="summary-card"><h2>Gain/Loss</h2><p style={{ color: totalGain >= 0 ? '#2ecc71' : '#e74c3c' }}>{totalGain.toFixed(2)}</p></div>
-      </div>
+      <button onClick={handleSubmit} className="bg-green-500 px-4 py-2 rounded text-white mb-6">+ Tambah Entry</button>
 
-      <div className="analysis-layout">
-        <div className="tv-chart" id="tv-container" ref={containerRef}></div>
-        <SignalDashboard symbol={symbol} groqAnalysis={groqAnalysis} />
-      </div>
+      {/* TradingView Chart */}
+      <div ref={containerRef} className="w-full h-[400px] mb-8"></div>
 
-      <button className="toggle-table-btn" onClick={() => setShowTable(!showTable)}>
-        {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
-      </button>
-
-      {showTable && (
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th><th>Kode</th><th>Entry</th><th>Exit</th><th>Gain/Loss %</th><th>Alasan</th><th>Emosi</th><th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e, i) => (
-              <tr key={i}>
-                <td>{e.date}</td>
-                <td>{e.symbol}</td>
-                <td>{e.entry}</td>
-                <td>{e.exit}</td>
-                <td style={{ color: e.gainLoss >= 0 ? '#2ecc71' : '#e74c3c' }}>{e.gainLoss}%</td>
-                <td>{e.reason}</td>
-                <td>{e.emotion}</td>
-                <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Signal Dashboard */}
+      {signalData ? (
+        <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />
+      ) : (
+        <p className="text-red-400">Memuat data indikator...</p>
       )}
     </div>
   );
