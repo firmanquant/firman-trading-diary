@@ -139,3 +139,24 @@ tbody td {
   min-height: 500px;
   max-width: 40%;
 }
+
+.analysis-layout {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 16px;
+}
+
+.groq-analysis-box,
+.dashboard-box {
+  flex: 1;
+  background-color: #1e1e1e;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.dashboard-box h3,
+.groq-analysis-box h3 {
+  margin-bottom: 8px;
+  color: #4fc3f7;
+}
