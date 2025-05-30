@@ -1,30 +1,32 @@
-// pages/api/signal.js (Dummy Signal API Final)
+// pages/api/signal.js (Dummy version with fallback validation)
 
 export default function handler(req, res) {
   const { symbol } = req.query;
 
-  if (!symbol || symbol.length < 3) {
-    return res.status(400).json({ error: 'Symbol is required (min 3 characters)' });
+  if (!symbol || symbol.length < 2) {
+    return res.status(400).json({ error: 'Invalid symbol' });
   }
 
   const dummySignal = {
     ema20: 5000,
     ema50: 5100,
-    ema20Prev: 5050,
-    ema50Prev: 5150,
-    ema20_1W: 4950,
-    ema50_1W: 5200,
-    rsi: 45,
-    macdLine: -10,
-    signalLine: -5,
-    macdLine_4H: -3,
-    signalLine_4H: -4,
-    plusDI: 18,
+    ema20Prev: 4950,
+    ema50Prev: 5050,
+    ema20_1W: 4800,
+    ema50_1W: 5000,
+    rsi: 47.5,
+    macdLine: -1.2,
+    signalLine: -1.0,
+    macdLine_4H: -0.5,
+    signalLine_4H: -0.6,
+    plusDI: 20,
     minusDI: 25,
     adx: 22,
-    atrPct: 2.5,
-    kalman: 5001,
-    close: 4998,
+    atrPct: 3.2,
+    kalman: 4998,
+    close: 5001,
+    support: 4800,
+    resistance: 5200
   };
 
   res.status(200).json(dummySignal);
