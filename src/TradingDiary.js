@@ -1,3 +1,4 @@
+// src/TradingDiary.js
 import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -13,7 +14,6 @@ const TradingDiary = () => {
   const [entries, setEntries] = useState([]);
   const [showTable, setShowTable] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
   const containerRef = useRef(null);
@@ -22,40 +22,35 @@ const TradingDiary = () => {
   const paginatedEntries = entries.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
   const totalPages = Math.ceil(entries.length / entriesPerPage);
 
-  // Load saved entries
   useEffect(() => {
     const saved = localStorage.getItem('tradingEntries');
     if (saved) setEntries(JSON.parse(saved));
   }, []);
 
-  // Save on change
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  // Fetch dummy signal data
   useEffect(() => {
     if (!symbol) return;
     fetch(`/api/signal?symbol=${symbol}`)
-      .then((res) => res.json())
-      .then((data) => setSignalData(data))
+      .then(res => res.json())
+      .then(data => setSignalData(data))
       .catch(() => setSignalData(null));
   }, [symbol]);
 
-  // Fetch dummy Groq analysis
   useEffect(() => {
     if (!symbol) return;
     fetch('/api/groq', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: `Berikan analisis teknikal untuk saham ${symbol}` })
+      body: JSON.stringify({ prompt: `Analisis teknikal saham ${symbol}` })
     })
-      .then((res) => res.json())
-      .then((data) => setGroqAnalysis(data.response || 'Gagal memuat analisis.'))
+      .then(res => res.json())
+      .then(data => setGroqAnalysis(data.response || 'Gagal memuat analisis.'))
       .catch(() => setGroqAnalysis('Gagal memuat analisis.'));
   }, [symbol]);
 
-  // Load TradingView chart
   useEffect(() => {
     if (!window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
@@ -67,7 +62,7 @@ const TradingDiary = () => {
       theme: 'dark',
       style: '1',
       locale: 'id',
-      container_id: containerRef.current.id || 'tvchart',
+      container_id: containerRef.current.id
     });
   }, [symbol]);
 
@@ -82,11 +77,7 @@ const TradingDiary = () => {
       emotion: emotion || 'x'
     };
     setEntries([newEntry, ...entries]);
-    setSymbol('');
-    setEntry('');
-    setExit('');
-    setReason('');
-    setEmotion('');
+    setSymbol(''); setEntry(''); setExit(''); setReason(''); setEmotion('');
   };
 
   const handleDelete = (index) => {
@@ -100,7 +91,7 @@ const TradingDiary = () => {
       <h1 className="title">Firman Trading Diary</h1>
 
       <div className="form">
-        <DatePicker selected={date} onChange={(d) => setDate(d)} />
+        <DatePicker selected={date} onChange={setDate} />
         <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" />
         <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Entry" />
         <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" />
@@ -123,7 +114,11 @@ const TradingDiary = () => {
 
         <div className="dashboard-box">
           <h3>📈 Dashboard Mini</h3>
-          {signalData ? <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} /> : <p>Memuat sinyal...</p>}
+          {signalData ? (
+            <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />
+          ) : (
+            <p>Memuat sinyal...</p>
+          )}
         </div>
       </div>
 
@@ -138,20 +133,13 @@ const TradingDiary = () => {
               <h2>Win Rate</h2>
               <p>
                 {entries.length > 0
-                  ? (
-                      (entries.filter((e) => parseFloat(e.exit) > parseFloat(e.entry)).length / entries.length) *
-                      100
-                    ).toFixed(1) + '%'
+                  ? `${((entries.filter(e => parseFloat(e.exit) > parseFloat(e.entry)).length / entries.length) * 100).toFixed(1)}%`
                   : '0%'}
               </p>
             </div>
             <div className="summary-card">
               <h2>Gain/Loss</h2>
-              <p>
-                {entries
-                  .reduce((acc, e) => acc + (parseFloat(e.exit) - parseFloat(e.entry)), 0)
-                  .toFixed(2)}
-              </p>
+              <p>{entries.reduce((acc, e) => acc + (parseFloat(e.exit) - parseFloat(e.entry)), 0).toFixed(2)}</p>
             </div>
           </div>
 
@@ -177,29 +165,19 @@ const TradingDiary = () => {
                   <td>{item.reason}</td>
                   <td>{item.emotion}</td>
                   <td>
-                    <button onClick={() => handleDelete(idx)} style={{ background: 'red', color: 'white' }}>
-                      Hapus
-                    </button>
+                    <button onClick={() => handleDelete(idx)} style={{ background: 'red', color: 'white' }}>Hapus</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* Pagination */}
-          <div style={{ marginTop: 20, textAlign: 'center' }}>
-            {Array.from({ length: totalPages }).map((_, i) => (
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
-                style={{
-                  margin: '0 4px',
-                  padding: '4px 8px',
-                  background: currentPage === i + 1 ? '#2ecc71' : '#444',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 4
-                }}
+                style={{ margin: '0 4px', padding: '4px 8px', background: currentPage === i + 1 ? '#2ecc71' : '#444', color: '#fff', border: 'none', borderRadius: 4 }}
               >
                 {i + 1}
               </button>
