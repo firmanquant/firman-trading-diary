@@ -1,4 +1,4 @@
-// SignalDashboard.js (FINAL)
+// src/SignalDashboard.js (FINAL REVISI TERBARU)
 import React from 'react';
 
 const SignalDashboard = ({
@@ -36,7 +36,7 @@ const SignalDashboard = ({
         <div><strong>ATR:</strong> {atrLabel}</div>
         <div><strong>RSI:</strong> {rsi}</div>
         <div><strong>Trend 1W:</strong> {trend1W}</div>
-        <div><strong>Kalman Diff:</strong> {kalman}</div>
+        <div><strong>Kalman:</strong> {kalman}</div>
       </div>
 
       <div className="mt-4 text-pink-300">
