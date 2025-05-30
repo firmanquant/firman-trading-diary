@@ -29,10 +29,10 @@ const SignalDashboard = ({
         <p>{groqAnalysis || 'Gagal memuat analisis.'}</p>
       </div>
 
-      <div className="chart-placeholder" />
+      <div className="tv-chart chart-placeholder" />
 
       <div className="dashboard-box">
-        <h3>📈 Dashboard Mini</h3>
+        <h3>📊 Dashboard Mini</h3>
         <p><strong>Sinyal:</strong> {signal}</p>
         <p><strong>MACD:</strong> {isBullish ? 'Bullish 🟢' : 'Bearish 🔴'}</p>
         <p><strong>ADX:</strong> {adx}</p>
