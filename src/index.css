@@ -15,175 +15,127 @@ h1.title {
   text-align: center;
   color: #4fc3f7;
   margin-bottom: 16px;
-  font-size: 26px;
 }
 
 .form {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .form input {
-  padding: 6px 10px;
+  padding: 8px;
   font-size: 14px;
-  background: #222;
+  background-color: #222;
   border: 1px solid #444;
+  color: #fff;
   border-radius: 4px;
-  color: #f0f0f0;
 }
 
 .form button {
-  padding: 6px 12px;
-  background-color: #4caf50;
-  color: white;
+  background-color: #2ecc71;
   border: none;
-  border-radius: 4px;
+  padding: 8px 16px;
+  color: white;
+  font-weight: bold;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .tv-chart {
   width: 100%;
-  height: 480px;
-  margin: 16px 0;
-  border-radius: 8px;
-  overflow: hidden;
+  min-height: 500px;
 }
 
 .summary-dashboard-container {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.summary-card {
-  background: #1c1c1c;
-  padding: 8px 12px;
-  border-radius: 6px;
-  text-align: center;
-  min-width: 120px;
-  font-size: 14px;
-}
-
-.summary-card h2 {
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.summary-card p {
-  margin: 0;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.dashboard-row {
-  display: flex;
-  justify-content: space-between;
   gap: 16px;
+  margin-top: 20px;
   margin-bottom: 12px;
 }
 
-.dashboard-box {
-  flex: 1;
-  background-color: #1c1c1c;
-  padding: 16px;
+.summary-card {
+  background-color: #1a1a1a;
+  padding: 12px 16px;
   border-radius: 8px;
-}
-
-.dashboard-box h2 {
   text-align: center;
-  color: #03a9f4;
-  margin-bottom: 10px;
+  min-width: 120px;
 }
 
-.dashboard-box p {
+.summary-card h2 {
+  margin: 0;
   font-size: 14px;
-  margin: 4px 0;
+}
+
+.summary-card p {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .toggle-table-btn {
-  margin: 12px auto;
   display: block;
-  background-color: #4caf50;
+  margin: 0 auto;
+  margin-bottom: 12px;
+  background-color: #2ecc71;
   color: white;
-  padding: 6px 16px;
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
+  font-weight: bold;
   cursor: pointer;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 16px;
+  margin-top: 20px;
   font-size: 14px;
 }
 
-thead {
+thead th {
   background-color: #222;
+  padding: 10px;
+  border-bottom: 2px solid #444;
 }
 
-th, td {
-  border: 1px solid #444;
-  padding: 6px;
+tbody td {
+  padding: 8px;
   text-align: center;
+  border-bottom: 1px solid #333;
 }
 
-tbody tr:nth-child(even) {
-  background-color: #1a1a1a;
-}
-
-tbody tr:nth-child(odd) {
-  background-color: #2a2a2a;
-}
-
-@media (max-width: 768px) {
-  .form {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .summary-dashboard-container {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .dashboard-row {
-    flex-direction: column;
-  }
-}
-
-/* Flex row for analysis and dashboard next to chart */
-.chart-section {
+.analysis-wrapper {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 20px;
 }
 
-.chart-column {
-  flex: 2;
-}
-
-.analysis-column, .signal-column {
+.groq-box {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.analysis-box, .signal-box {
   background-color: #1c1c1c;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 30%;
 }
 
-.analysis-box h3, .signal-box h3 {
-  margin-top: 0;
-  font-size: 15px;
-  color: #ccc;
-  text-align: center;
+.mini-dashboard-box {
+  flex: 1;
+  background-color: #1c1c1c;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 30%;
+}
+
+.tv-chart {
+  flex: 2;
+  min-height: 500px;
+  max-width: 40%;
 }
