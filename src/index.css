@@ -1,3 +1,4 @@
+/* General reset and styling */
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,15 +15,16 @@ body {
 h1.title {
   text-align: center;
   color: #4fc3f7;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
+/* Form layout */
 .form {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .form input {
@@ -45,11 +47,12 @@ h1.title {
   border-radius: 4px;
 }
 
+/* Summary cards */
 .summary-dashboard-container {
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin: 20px 0 12px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
@@ -72,28 +75,7 @@ h1.title {
   font-weight: bold;
 }
 
-.toggle-table-btn {
-  display: block;
-  margin: 0 auto 12px;
-  background-color: #2ecc71;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-  padding: 4px 10px;
-  font-size: 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
+/* Table */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -113,18 +95,30 @@ tbody td {
   border-bottom: 1px solid #333;
 }
 
-/* Final Grid Layout */
+.toggle-table-btn {
+  display: block;
+  margin: 20px auto;
+  background-color: #2ecc71;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Layout: Chart + Dashboard + Groq */
 .analysis-layout {
   display: grid;
-  grid-template-columns: 60% 20% 20%;
+  grid-template-columns: 3fr 1fr 1fr;
   gap: 20px;
+  align-items: flex-start;
   margin-top: 24px;
-  align-items: start;
 }
 
 .tv-chart {
   width: 100%;
-  height: 420px;
+  min-height: 500px;
 }
 
 .dashboard-box,
@@ -136,30 +130,38 @@ tbody td {
   font-size: 14px;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-}
-
+/* Header untuk box */
 .dashboard-box h3,
 .groq-box h3 {
   margin-bottom: 12px;
   color: #4fc3f7;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .analysis-layout {
-    grid-template-columns: 1fr;
-  }
+/* 2-column grid in Dashboard Mini */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  font-size: 14px;
+}
 
-  .tv-chart {
-    height: 360px;
+/* Responsive layout */
+@media (max-width: 900px) {
+  .form {
+    flex-direction: column;
+    align-items: center;
   }
 
   .summary-dashboard-container {
     flex-direction: column;
     align-items: center;
+  }
+
+  .analysis-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tv-chart {
+    min-height: 400px;
   }
 }
