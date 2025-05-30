@@ -1,4 +1,3 @@
-// TradingDiary.js (FINAL VERSION with working signal + groq + layout fix)
 import 'react-datepicker/dist/react-datepicker.css';
 import React, { useState, useRef, useEffect } from 'react';
 import SignalDashboard from './SignalDashboard';
@@ -12,7 +11,7 @@ const TradingDiary = () => {
   const [reason, setReason] = useState('');
   const [emotion, setEmotion] = useState('');
   const [entries, setEntries] = useState([]);
-  const [showTable, setShowTable] = useState(false);
+  const [showTable, setShowTable] = useState(true);
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
 
@@ -56,13 +55,40 @@ const TradingDiary = () => {
     });
   }, [symbol]);
 
-  const handleSave = () => {
-    const newEntry = { date, symbol, entry, exit, reason, emotion };
-    setEntries([...entries, newEntry]);
+  const handleSubmit = () => {
+    setEntries([...entries, {
+      date,
+      symbol,
+      entry,
+      exit,
+      reason,
+      emotion,
+    }]);
+    setSymbol('');
+    setEntry('');
+    setExit('');
+    setReason('');
+    setEmotion('');
   };
 
+  const handleDelete = (index) => {
+    const updated = [...entries];
+    updated.splice(index, 1);
+    setEntries(updated);
+  };
+
+  const totalTrade = entries.length;
+  const winRate = (() => {
+    const wins = entries.filter(e => parseFloat(e.exit) > parseFloat(e.entry)).length;
+    return totalTrade ? ((wins / totalTrade) * 100).toFixed(1) + '%' : '0%';
+  })();
+  const gainLoss = (() => {
+    const total = entries.reduce((acc, e) => acc + (parseFloat(e.exit) - parseFloat(e.entry)), 0);
+    return total.toFixed(2);
+  })();
+
   return (
-    <div className="container">
+    <div className="container" style={{ padding: 20 }}>
       <h1 className="title">Firman Trading Diary</h1>
 
       <div className="form">
@@ -72,42 +98,71 @@ const TradingDiary = () => {
         <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" />
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" />
         <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" />
-        <button onClick={handleSave}>Simpan</button>
+        <button onClick={handleSubmit} style={{ backgroundColor: 'green', color: 'white' }}>Simpan</button>
         <button onClick={() => setShowTable(!showTable)}>
           {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
         </button>
       </div>
 
-      <div className="grid-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
-        {signalData && <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />}
-        <div ref={containerRef} style={{ height: '400px' }} />
+      {/* Layout 3 Kolom */}
+      <div className="content" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+        <div className="left" style={{ flex: 1 }}>
+          <p><strong>🧠 Analisis Groq</strong></p>
+          <pre style={{ background: '#222', padding: 10, color: '#0f0' }}>{groqAnalysis}</pre>
+        </div>
+
+        <div className="middle" style={{ flex: 2 }}>
+          <p><strong>📊 Chart</strong></p>
+          <div ref={containerRef} style={{ height: '400px', marginBottom: '20px' }} />
+        </div>
+
+        <div className="right" style={{ flex: 1 }}>
+          <p><strong>📈 Dashboard Mini</strong></p>
+          {signalData && <SignalDashboard {...signalData} />}
+        </div>
       </div>
 
+      {/* Ringkasan & Tabel */}
       {showTable && (
-        <table className="entry-table">
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Kode</th>
-              <th>Entry</th>
-              <th>Exit</th>
-              <th>Alasan</th>
-              <th>Emosi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((item, idx) => (
-              <tr key={idx}>
-                <td>{item.date.toLocaleDateString()}</td>
-                <td>{item.symbol}</td>
-                <td>{item.entry}</td>
-                <td>{item.exit}</td>
-                <td>{item.reason}</td>
-                <td>{item.emotion}</td>
+        <>
+          <div style={{ marginTop: 30 }}>
+            <p><strong>🔢 Ringkasan:</strong></p>
+            <ul>
+              <li>Total Trade: {totalTrade}</li>
+              <li>Win Rate: {winRate}</li>
+              <li>Gain/Loss: {gainLoss}</li>
+            </ul>
+          </div>
+
+          <table style={{ width: '100%', marginTop: 20, borderCollapse: 'collapse', color: 'white' }}>
+            <thead style={{ backgroundColor: '#333' }}>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kode</th>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Alasan</th>
+                <th>Emosi</th>
+                <th>Hapus</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((item, idx) => (
+                <tr key={idx} style={{ textAlign: 'center' }}>
+                  <td>{item.date.toLocaleDateString()}</td>
+                  <td>{item.symbol}</td>
+                  <td>{item.entry}</td>
+                  <td>{item.exit}</td>
+                  <td>{item.reason}</td>
+                  <td>{item.emotion}</td>
+                  <td>
+                    <button onClick={() => handleDelete(idx)} style={{ color: 'red' }}>Hapus</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   );
