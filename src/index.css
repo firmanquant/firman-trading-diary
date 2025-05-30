@@ -103,13 +103,14 @@ tbody td {
   border-bottom: 1px solid #333;
 }
 
-/* === Layout Grid: Analisis | Chart | Dashboard === */
+/* === FINAL LAYOUT: Dashboard Mini + Groq di Kiri, Chart di Tengah === */
 .analysis-layout {
-  display: grid;
-  grid-template-columns: 1fr 2.2fr 1fr;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 20px;
   margin-top: 24px;
-  align-items: start;
+  flex-wrap: wrap;
 }
 
 .groq-box,
@@ -118,6 +119,10 @@ tbody td {
   padding: 16px;
   border-radius: 8px;
   color: #f0f0f0;
+  font-size: 14px;
+  width: 20%; /* ~30% dikurangi */
+  height: 325px; /* Tinggi dikurangi sekitar 35% */
+  box-sizing: border-box;
 }
 
 .groq-box h3,
@@ -127,18 +132,27 @@ tbody td {
 }
 
 .tv-chart {
-  width: 100%;
+  flex: 1;
+  min-width: 55%;
   min-height: 500px;
 }
 
-/* Responsive: Mobile & Tablet */
+/* === Responsive === */
 @media (max-width: 900px) {
   .analysis-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
   }
 
   .tv-chart {
+    width: 100%;
     min-height: 400px;
+  }
+
+  .groq-box,
+  .dashboard-box {
+    width: 100%;
+    height: auto;
   }
 
   .summary-dashboard-container {
