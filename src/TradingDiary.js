@@ -1,5 +1,4 @@
-// TradingDiary.js (refactor layout kompak, chart center, analisis & dashboard horizontal)
-
+// TradingDiary.js (final, presisi produksi, layout profesional)
 import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
 
@@ -12,7 +11,6 @@ const TVChart = ({ symbol = "IDX:BBCA" }) => {
 
     const container = containerRef.current;
     if (!container || !window.TradingView) return;
-
     container.innerHTML = '';
 
     const widgetOptions = {
@@ -63,9 +61,7 @@ const TradingDiary = () => {
     }
   });
 
-  const [form, setForm] = useState({
-    date: '', ticker: '', entry: '', exit: '', reason: '', emotion: ''
-  });
+  const [form, setForm] = useState({ date: '', ticker: '', entry: '', exit: '', reason: '', emotion: '' });
   const [ticker, setTicker] = useState('BBCA');
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
@@ -84,13 +80,8 @@ const TradingDiary = () => {
     }
   };
 
-  useEffect(() => {
-    if (ticker) fetchGroqAnalysis();
-  }, [ticker]);
-
-  useEffect(() => {
-    localStorage.setItem('tradingEntries', JSON.stringify(entries));
-  }, [entries]);
+  useEffect(() => { if (ticker) fetchGroqAnalysis(); }, [ticker]);
+  useEffect(() => { localStorage.setItem('tradingEntries', JSON.stringify(entries)); }, [entries]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -104,7 +95,7 @@ const TradingDiary = () => {
 
     const entryNum = parseFloat(entry);
     const exitNum = parseFloat(exit);
-    if (isNaN(entryNum) || entryNum <= 0 || isNaN(exitNum) || exitNum <= 0)
+    if (isNaN(entryNum) || isNaN(exitNum) || entryNum <= 0 || exitNum <= 0)
       return alert('Entry dan Exit harus angka positif.');
 
     setEntries(prev => [...prev, { ...form, entry: entryNum, exit: exitNum }]);
@@ -130,6 +121,7 @@ const TradingDiary = () => {
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
         <input type="date" name="date" value={form.date} onChange={handleChange} />
         <input name="ticker" placeholder="Ticker" value={form.ticker} onChange={handleChange} />
@@ -142,20 +134,21 @@ const TradingDiary = () => {
 
       <TVChart symbol={`IDX:${ticker}`} />
 
-      <div className="summary-dashboard-container compact">
-        <div className="summary-card"><p>Total Trade</p><strong>{stats.total}</strong></div>
-        <div className="summary-card"><p>Win Rate</p><strong>{winRate.toFixed(1)}%</strong></div>
-        <div className="summary-card"><p>Gain/Loss</p><strong style={{ color: stats.gain >= 0 ? 'limegreen' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</strong></div>
+      <div className="summary-dashboard-container">
+        <div className="summary-card"><h2>Total Trade</h2><p>{stats.total}</p></div>
+        <div className="summary-card"><h2>Win Rate</h2><p>{winRate.toFixed(1)}%</p></div>
+        <div className="summary-card"><h2>Gain/Loss</h2><p style={{ color: stats.gain >= 0 ? 'limegreen' : 'red' }}>{stats.gain >= 0 ? '+' : ''}{stats.gain.toFixed(2)}</p></div>
       </div>
 
-      <div className="analysis-dashboard-row">
+      <div className="info-panels">
         <div className="groq-analysis"><strong>Analisis Groq:</strong><p>{groqAnalysis || 'Memuat analisis...'}</p></div>
         <SignalDashboard
           ema20={50} ema50={45} ema20Prev={48} ema50Prev={46} ema20_1W={49} ema50_1W={47}
           rsi={60} macdLine={1.5} signalLine={1.2} macdLine_4H={0.5} signalLine_4H={0.4}
           plusDI={25} minusDI={15} adx={30} atrPct={1.8}
           kalman={form.entry || 100} close={form.exit || 105}
-          groqAnalysis={groqAnalysis} symbol={ticker}
+          groqAnalysis={groqAnalysis}
+          symbol={ticker}
         />
       </div>
 
