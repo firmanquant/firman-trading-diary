@@ -14,13 +14,7 @@ const SignalDashboard = ({
   const trend1W = ema20_1W > ema50_1W ? 'Bullish' : 'Bearish';
   const diTrend = plusDI > minusDI ? '+DI Dominan' : '-DI Dominan';
   const atrLabel = atrPct > 3 ? 'Volatile' : 'Normal';
-  const signal =
-    emaTrend === 'Uptrend' &&
-    isBullish &&
-    isBullish4H &&
-    plusDI > minusDI
-      ? 'BELI ✅'
-      : 'TIDAK ADA';
+  const signal = emaTrend === 'Uptrend' && isBullish && isBullish4H && plusDI > minusDI ? 'BELI ✅' : 'TIDAK ADA';
 
   return (
     <div className="analysis-layout">
@@ -29,7 +23,7 @@ const SignalDashboard = ({
         <p>{groqAnalysis || 'Gagal memuat analisis.'}</p>
       </div>
 
-      <div className="tv-chart chart-placeholder" />
+      <div className="chart-placeholder" />
 
       <div className="dashboard-box">
         <h3>📊 Dashboard Mini</h3>
