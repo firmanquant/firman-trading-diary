@@ -160,3 +160,23 @@ tbody td {
   margin-bottom: 8px;
   color: #4fc3f7;
 }
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.groq-box,
+.dashboard-box {
+  background-color: #1c1c1c;
+  padding: 16px;
+  border-radius: 8px;
+  color: #f0f0f0;
+}
+
+.chart-placeholder {
+  /* Spacer tengah – kosongkan */
+}
