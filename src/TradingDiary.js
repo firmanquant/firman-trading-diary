@@ -1,10 +1,9 @@
-// TradingDiary.js (FINAL LENGKAP + Perbaikan Layout, Logika, dan Tabel)
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SignalDashboard from './SignalDashboard';
 
 const TradingDiary = () => {
-  const [date, setDate] = useState('');
   const [symbol, setSymbol] = useState('BBCA');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [entry, setEntry] = useState('');
   const [exit, setExit] = useState('');
   const [reason, setReason] = useState('');
@@ -18,22 +17,41 @@ const TradingDiary = () => {
 
   const fullSymbol = `IDX:${symbol}`;
 
+  // Load TradingView chart
   useEffect(() => {
-    if (!window.TradingView || !containerRef.current) return;
-    containerRef.current.innerHTML = '';
-    widgetRef.current = new window.TradingView.widget({
-      symbol: fullSymbol,
-      interval: 'D',
-      container_id: 'tv-container',
-      theme: 'dark',
-      locale: 'id',
-      autosize: true,
-    });
+    if (!window.TradingView) {
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/tv.js';
+      script.async = true;
+      script.onload = () => loadWidget();
+      document.head.appendChild(script);
+    } else {
+      loadWidget();
+    }
+
+    function loadWidget() {
+      if (!containerRef.current) return;
+      containerRef.current.innerHTML = '';
+      widgetRef.current = new window.TradingView.widget({
+        symbol: fullSymbol,
+        interval: 'D',
+        container_id: 'tv-container',
+        theme: 'dark',
+        locale: 'id',
+        autosize: true,
+      });
+    }
+
     return () => widgetRef.current?.remove();
   }, [fullSymbol]);
 
+  // Dummy Groq API logic (replace with real API)
+  useEffect(() => {
+    setGroqAnalysis(`Analisis teknikal untuk saham ${symbol}`);
+  }, [symbol]);
+
   const handleAddEntry = () => {
-    if (!symbol || !entry || !exit || !date) return;
+    if (!symbol || !entry || !exit) return alert('Harap isi semua kolom wajib.');
     const gainLoss = ((exit - entry) / entry) * 100;
     setEntries(prev => [...prev, {
       date,
@@ -44,23 +62,21 @@ const TradingDiary = () => {
       reason,
       emotion
     }]);
-    setDate('');
     setEntry('');
     setExit('');
     setReason('');
     setEmotion('');
   };
 
-  const handleDelete = (index) => {
-    const newEntries = entries.filter((_, i) => i !== index);
-    setEntries(newEntries);
+  const handleDelete = index => {
+    const updated = [...entries];
+    updated.splice(index, 1);
+    setEntries(updated);
   };
 
   const totalTrade = entries.length;
-  const winRate = totalTrade > 0
-    ? (entries.filter(e => e.gainLoss > 0).length / totalTrade * 100).toFixed(1)
-    : 0;
-  const totalGain = entries.reduce((acc, e) => acc + parseFloat(e.gainLoss), 0).toFixed(2);
+  const winRate = totalTrade > 0 ? entries.filter(e => parseFloat(e.gainLoss) > 0).length / totalTrade * 100 : 0;
+  const totalGain = entries.reduce((acc, e) => acc + parseFloat(e.gainLoss), 0);
 
   return (
     <div className="container">
@@ -83,23 +99,24 @@ const TradingDiary = () => {
         </div>
         <div className="summary-card">
           <h2>Win Rate</h2>
-          <p>{winRate}%</p>
+          <p>{winRate.toFixed(1)}%</p>
         </div>
         <div className="summary-card">
           <h2>Gain/Loss</h2>
-          <p style={{ color: totalGain >= 0 ? '#2ecc71' : '#e74c3c' }}>{totalGain}</p>
+          <p style={{ color: totalGain >= 0 ? '#2ecc71' : '#e74c3c' }}>{totalGain.toFixed(2)}%</p>
         </div>
       </div>
 
       <div className="analysis-layout">
-        <div className="tv-chart" id="tv-container" ref={containerRef}></div>
+        <div className="tv-chart" ref={containerRef} id="tv-container" />
         <SignalDashboard
-          ema20={9800} ema50={9500} ema20Prev={9600} ema50Prev={9400}
-          ema20_1W={9000} ema50_1W={9200}
-          macdLine={1.5} signalLine={1.2}
-          macdLine_4H={1.4} signalLine_4H={1.0}
+          groqAnalysis={groqAnalysis}
+          ema20={50} ema50={45} ema20Prev={48} ema50Prev={46}
+          ema20_1W={49} ema50_1W={47}
+          rsi={60} macdLine={1.5} signalLine={1.2}
+          macdLine_4H={0.5} signalLine_4H={0.4}
           plusDI={25} minusDI={15} adx={30} atrPct={1.8}
-          kalman={100} rsi={60} close={10000} groqAnalysis={groqAnalysis}
+          kalman={entry || 100} close={exit || 105}
         />
       </div>
 
@@ -115,10 +132,10 @@ const TradingDiary = () => {
               <th>Kode</th>
               <th>Entry</th>
               <th>Exit</th>
-              <th>Gain/Loss (%)</th>
+              <th>Gain/Loss %</th>
               <th>Alasan</th>
               <th>Emosi</th>
-              <th>Hapus</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -128,10 +145,10 @@ const TradingDiary = () => {
                 <td>{e.symbol}</td>
                 <td>{e.entry}</td>
                 <td>{e.exit}</td>
-                <td>{e.gainLoss}</td>
+                <td style={{ color: e.gainLoss >= 0 ? '#2ecc71' : '#e74c3c' }}>{e.gainLoss}%</td>
                 <td>{e.reason}</td>
                 <td>{e.emotion}</td>
-                <td><button onClick={() => handleDelete(i)}>❌</button></td>
+                <td><button onClick={() => handleDelete(i)}>Hapus</button></td>
               </tr>
             ))}
           </tbody>
