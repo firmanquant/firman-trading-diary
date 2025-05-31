@@ -1,4 +1,4 @@
-// src/SignalDashboard.js
+// src/SignalDashboard.js (Final Revisi)
 import React from 'react';
 
 const SignalDashboard = ({
@@ -8,7 +8,7 @@ const SignalDashboard = ({
   rsi, macdLine, signalLine,
   macdLine_4H, signalLine_4H,
   plusDI, minusDI, adx, atrPct,
-  kalman, close, groqAnalysis
+  kalman, close
 }) => {
   const isBullish = macdLine > signalLine;
   const isBullish4H = macdLine_4H > signalLine_4H;
@@ -25,11 +25,11 @@ const SignalDashboard = ({
   ) ? 'BELI ✅' : 'TIDAK ADA ❌';
 
   return (
-    <div className="bg-black text-white p-4 rounded-lg w-full">
-      <h2 className="text-lg font-bold text-cyan-400 mb-2">📊 Dashboard Mini</h2>
-      {ticker && <p className="text-sm mb-2 font-semibold text-white">{ticker}</p>}
+    <div className="dashboard-box">
+      <h3 className="text-lg font-bold text-cyan-400 mb-2">📊 Dashboard Mini</h3>
+      {ticker && <p className="text-sm mb-2 font-semibold">{ticker}</p>}
 
-      <div className="grid grid-cols-2 gap-2 text-sm">
+      <div className="dashboard-grid">
         <div><strong>Sinyal:</strong> {finalSignal}</div>
         <div><strong>MACD:</strong> {isBullish ? 'Bullish 🔴' : 'Bearish 🔴'}</div>
         <div><strong>ADX:</strong> {adx}</div>
@@ -42,17 +42,12 @@ const SignalDashboard = ({
         <div><strong>Kalman:</strong> {kalman}</div>
       </div>
 
-      {confidence && notes && (
+      {(confidence || notes) && (
         <div className="mt-4 text-green-300 text-sm">
-          <p><strong>Confidence:</strong> {confidence}</p>
-          <p><strong>Notes:</strong> {notes}</p>
+          {confidence && <p><strong>Confidence:</strong> {confidence}</p>}
+          {notes && <p><strong>Notes:</strong> {notes}</p>}
         </div>
       )}
-
-      <div className="mt-4 text-pink-300">
-        <h3 className="text-md font-semibold">🧠 Analisis Groq</h3>
-        {groqAnalysis ? <p>{groqAnalysis}</p> : <p>Gagal memuat analisis.</p>}
-      </div>
     </div>
   );
 };
