@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { fetchData, fetchSignal } from "./api";
+import { fetchData } from "./lib/groq";
+import { fetchSignal } from "./lib/signal";
 import TradingViewWidget from "./TradingViewWidget";
 import SignalDashboard from "./SignalDashboard";
 import TradeTable from "./TradeTable";
