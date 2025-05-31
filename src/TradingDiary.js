@@ -18,23 +18,20 @@ const TradingDiary = () => {
   const [signalData, setSignalData] = useState(null);
   const containerRef = useRef(null);
 
-  // Load saved entries
   useEffect(() => {
     const saved = localStorage.getItem('tradingEntries');
     if (saved) setEntries(JSON.parse(saved));
   }, []);
 
-  // Save entries to localStorage
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
-  // Fetch analysis & signal when symbol changes
   useEffect(() => {
     if (!symbol) return;
 
     getSignalData(symbol)
-      .then((data) => setSignalData({ ...data, ticker: symbol })) // pastikan ticker ikut
+      .then((data) => setSignalData({ ...data, ticker: symbol }))
       .catch(() => setSignalData(null));
 
     getGroqAnalysis(symbol)
@@ -42,7 +39,6 @@ const TradingDiary = () => {
       .catch(() => setGroqAnalysis('Gagal memuat analisis.'));
   }, [symbol]);
 
-  // Load TradingView chart
   useEffect(() => {
     if (!symbol || !window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
@@ -82,6 +78,12 @@ const TradingDiary = () => {
     setEmotion('');
   };
 
+  const handleDelete = (index) => {
+    const updated = [...entries];
+    updated.splice(index, 1);
+    setEntries(updated);
+  };
+
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
@@ -96,16 +98,12 @@ const TradingDiary = () => {
         <button onClick={handleSave}>Simpan</button>
       </div>
 
-      <button className="toggle-table-btn" onClick={() => setShowTable(!showTable)}>
-        {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
-      </button>
-
       {showTable && (
         <div className="mt-4 table-entries">
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th>Tanggal</th><th>Symbol</th><th>Entry</th><th>Exit</th><th>Alasan</th><th>Emosi</th>
+                <th>Tanggal</th><th>Symbol</th><th>Entry</th><th>Exit</th><th>Alasan</th><th>Emosi</th><th>Hapus</th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +115,7 @@ const TradingDiary = () => {
                   <td>{entry.exit}</td>
                   <td>{entry.reason}</td>
                   <td>{entry.emotion}</td>
+                  <td><button onClick={() => handleDelete(i)}>🗑️</button></td>
                 </tr>
               ))}
             </tbody>
@@ -142,6 +141,12 @@ const TradingDiary = () => {
             <p>Memuat sinyal...</p>
           )}
         </div>
+      </div>
+
+      <div className="footer-controls text-center mt-8">
+        <button className="toggle-table-btn" onClick={() => setShowTable(!showTable)}>
+          {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
+        </button>
       </div>
     </div>
   );
