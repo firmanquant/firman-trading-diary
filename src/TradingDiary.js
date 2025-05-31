@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import SignalDashboard from './SignalDashboard';
+import { getGroqAnalysis } from './api/groq';
+import { getSignalData } from './api/signal';
 
 const TradingDiary = () => {
   const [date, setDate] = useState(new Date());
@@ -27,21 +29,15 @@ const TradingDiary = () => {
 
   useEffect(() => {
     if (!symbol) return;
-    fetch(`/api/signal?symbol=${symbol}`)
-      .then((res) => res.json())
+    getSignalData(symbol)
       .then((data) => setSignalData(data))
       .catch(() => setSignalData(null));
   }, [symbol]);
 
   useEffect(() => {
     if (!symbol) return;
-    fetch('/api/groq', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: `Analisis teknikal untuk ${symbol}` })
-    })
-      .then((res) => res.json())
-      .then((data) => setGroqAnalysis(data.response || 'Gagal memuat analisis.'))
+    getGroqAnalysis(symbol)
+      .then((data) => setGroqAnalysis(data.response))
       .catch(() => setGroqAnalysis('Gagal memuat analisis.'));
   }, [symbol]);
 
@@ -81,6 +77,7 @@ const TradingDiary = () => {
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
         <DatePicker selected={date} onChange={(d) => setDate(d)} />
         <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" />
@@ -108,7 +105,7 @@ const TradingDiary = () => {
 
         <div className="right-box">
           <h3>📈 Dashboard Mini</h3>
-          {signalData ? <SignalDashboard {...signalData} /> : <p>Memuat sinyal...</p>}
+          {signalData ? <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} /> : <p>Memuat sinyal...</p>}
         </div>
       </div>
     </div>
