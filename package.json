@@ -2,15 +2,13 @@
   "name": "firman-trading-diary",
   "version": "1.0.0",
   "private": true,
-<<<<<<< HEAD
-=======
   "dependencies": {
     "react": "^18.3.1",
     "react-datepicker": "^4.8.0",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1"
   },
->>>>>>> ad9c7e07 (Fix: install react-datepicker@4.3.0 with legacy deps)
+
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
