@@ -1,4 +1,4 @@
-// TradingDiary.js (FINAL SINKRONISASI)
+// src/TradingDiary.js
 import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -17,7 +17,6 @@ const TradingDiary = () => {
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -31,16 +30,26 @@ const TradingDiary = () => {
 
   useEffect(() => {
     if (!symbol) return;
-    setIsLoading(true);
 
-    Promise.all([
-      getSignalData(symbol).catch(() => null),
-      getGroqAnalysis(symbol).catch(() => ({ response: 'Gagal memuat analisis.' }))
-    ]).then(([signal, groq]) => {
-      setSignalData(signal ? { ...signal, ticker: symbol } : null);
-      setGroqAnalysis(groq.response);
-      setIsLoading(false);
-    });
+    const loadAllData = async () => {
+      setGroqAnalysis('Memuat analisis...');
+      setSignalData(null);
+
+      try {
+        const [groq, signal] = await Promise.all([
+          getGroqAnalysis(symbol),
+          getSignalData(symbol)
+        ]);
+
+        setGroqAnalysis(groq.response || 'Gagal memuat analisis.');
+        setSignalData({ ...signal, ticker: symbol });
+      } catch {
+        setGroqAnalysis('Gagal memuat analisis.');
+        setSignalData(null);
+      }
+    };
+
+    loadAllData();
   }, [symbol]);
 
   useEffect(() => {
@@ -106,26 +115,30 @@ const TradingDiary = () => {
         <button onClick={handleSave} className="bg-green-600 text-white px-4 py-1 rounded col-span-6">Simpan</button>
       </div>
 
-      <div className="three-column-layout grid grid-cols-3 gap-4 items-start">
-        <div className="left-box bg-zinc-900 p-4 rounded min-h-[480px]">
+      <div className="three-column-layout">
+        <div className="left-box">
           <h3 className="text-pink-300 font-semibold mb-2">🧠 Analisis Groq</h3>
-          {isLoading ? <p>Memuat analisis...</p> : <p>{groqAnalysis}</p>}
+          <p>{groqAnalysis || 'Memuat analisis...'}</p>
         </div>
 
-        <div className="center-box bg-black p-2 rounded min-h-[480px]">
-          <div ref={containerRef} id="tvchart" style={{ minHeight: '400px' }} />
+        <div className="center-box">
+          <div ref={containerRef} id="tvchart" className="w-full min-h-[480px]" />
         </div>
 
-        <div className="right-box bg-zinc-900 p-4 rounded min-h-[480px]">
+        <div className="right-box">
           <h3 className="text-white font-semibold mb-2">📈 Dashboard Mini</h3>
-          {isLoading ? <p className="text-gray-400">Memuat sinyal...</p> : signalData && <SignalDashboard {...signalData} />}
+          {signalData ? (
+            <SignalDashboard {...signalData} />
+          ) : (
+            <p className="text-gray-400">Memuat sinyal...</p>
+          )}
         </div>
       </div>
 
       <div className="text-center mt-6">
         <button
           onClick={() => setShowTable(!showTable)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="toggle-table-btn"
         >
           {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
         </button>
@@ -133,10 +146,19 @@ const TradingDiary = () => {
 
       {showTable && (
         <div className="mt-6">
-          <div className="text-sm text-white mb-2 flex justify-center gap-4">
-            <div className="summary-card"><h2>Total Trade</h2><p>{totalTrades}</p></div>
-            <div className="summary-card"><h2>Win Rate</h2><p>{winRate}%</p></div>
-            <div className="summary-card"><h2>Gain / Loss</h2><p>{wins} / {losses}</p></div>
+          <div className="summary-dashboard-container">
+            <div className="summary-card">
+              <h2>Total Trade</h2>
+              <p>{totalTrades}</p>
+            </div>
+            <div className="summary-card">
+              <h2>Win Rate</h2>
+              <p>{winRate}%</p>
+            </div>
+            <div className="summary-card">
+              <h2>Gain / Loss</h2>
+              <p>{wins} / {losses}</p>
+            </div>
           </div>
 
           <table className="w-full text-sm text-white border border-gray-700">
