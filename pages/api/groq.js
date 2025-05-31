@@ -1,6 +1,10 @@
-export async function getGroqAnalysis(symbol) {
-  // Simulasi response dummy
-  return {
-    response: `Analisis teknikal untuk ${symbol}: Tren naik, volume meningkat, peluang breakout.`
-  };
+export default function handler(req, res) {
+  const { prompt } = req.body;
+
+  const dummyResponse = `Analisis teknikal untuk ${prompt || 'Saham'}:
+  - Trend saat ini: Bullish
+  - Indikator RSI: Netral
+  - Rekomendasi: Tunggu konfirmasi breakout`;
+
+  res.status(200).json({ response: dummyResponse });
 }
