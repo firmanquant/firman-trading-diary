@@ -1,5 +1,5 @@
 export default function handler(req, res) {
-  const { symbol } = req.query;
+  const { symbol } = req.query || {};
 
   const dummySignal = {
     ticker: symbol || 'BBRI',
