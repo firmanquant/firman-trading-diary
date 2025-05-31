@@ -1,197 +1,135 @@
-// src/TradingDiary.js
-import React, { useState, useEffect, useRef } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import SignalDashboard from './SignalDashboard';
-import { getGroqAnalysis } from './lib/groq';
-import { getSignalData } from './lib/signal';
+import React, { useState, useEffect } from "react";
+import { fetchData, fetchSignal } from "./api";
+import TradingViewWidget from "./TradingViewWidget";
+import SignalDashboard from "./SignalDashboard";
+import TradeTable from "./TradeTable";
 
 const TradingDiary = () => {
-  const [date, setDate] = useState(new Date());
-  const [symbol, setSymbol] = useState('');
-  const [entry, setEntry] = useState('');
-  const [exit, setExit] = useState('');
-  const [reason, setReason] = useState('');
-  const [emotion, setEmotion] = useState('');
-  const [entries, setEntries] = useState([]);
+  const [symbol, setSymbol] = useState("");
+  const [entry, setEntry] = useState("");
+  const [exit, setExit] = useState("");
+  const [reason, setReason] = useState("");
+  const [emotion, setEmotion] = useState("");
+  const [journal, setJournal] = useState([]);
+  const [analysis, setAnalysis] = useState(null);
+  const [signal, setSignal] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [showTable, setShowTable] = useState(false);
-  const [groqAnalysis, setGroqAnalysis] = useState('');
-  const [signalData, setSignalData] = useState(null);
-  const containerRef = useRef(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('tradingEntries');
-    if (saved) setEntries(JSON.parse(saved));
+    const stored = localStorage.getItem("journal");
+    if (stored) setJournal(JSON.parse(stored));
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('tradingEntries', JSON.stringify(entries));
-  }, [entries]);
+    localStorage.setItem("journal", JSON.stringify(journal));
+  }, [journal]);
 
   useEffect(() => {
-    if (!symbol) return;
-
-    const loadAllData = async () => {
-      setGroqAnalysis('Memuat analisis...');
-      setSignalData(null);
-
-      try {
-        const [groq, signal] = await Promise.all([
-          getGroqAnalysis(symbol),
-          getSignalData(symbol)
-        ]);
-
-        setGroqAnalysis(groq.response || 'Gagal memuat analisis.');
-        setSignalData({ ...signal, ticker: symbol });
-      } catch {
-        setGroqAnalysis('Gagal memuat analisis.');
-        setSignalData(null);
-      }
-    };
-
-    loadAllData();
-  }, [symbol]);
-
-  useEffect(() => {
-    if (!symbol || !window.TradingView || !containerRef.current) return;
-    containerRef.current.innerHTML = '';
-    new window.TradingView.widget({
-      autosize: true,
-      symbol: `IDX:${symbol}`,
-      interval: 'D',
-      timezone: 'Asia/Jakarta',
-      theme: 'dark',
-      style: '1',
-      locale: 'id',
-      container_id: containerRef.current.id,
-    });
-  }, [symbol]);
-
-  const handleSave = () => {
-    if (!symbol || !entry || !exit) {
-      alert('Mohon lengkapi kolom Kode Saham, Entry, dan Exit.');
+    if (!symbol || symbol.length < 4) {
+      setAnalysis(null);
+      setSignal(null);
       return;
     }
+    setLoading(true);
+    Promise.all([fetchData(symbol), fetchSignal(symbol)])
+      .then(([a, s]) => {
+        setAnalysis(a);
+        setSignal(s);
+      })
+      .catch(() => {
+        setAnalysis("error");
+        setSignal("error");
+      })
+      .finally(() => setLoading(false));
+  }, [symbol]);
 
-    const newEntry = {
-      date: date.toLocaleDateString('id-ID'),
-      symbol,
+  const handleAdd = () => {
+    if (!symbol || !entry || !exit) return;
+    const newRow = {
+      date: new Date().toLocaleDateString("en-GB"),
+      symbol: symbol.toUpperCase(),
       entry,
       exit,
-      reason: reason || 'x',
-      emotion: emotion || 'x'
+      reason,
+      emotion,
     };
-
-    setEntries([newEntry, ...entries]);
-    setSymbol('');
-    setEntry('');
-    setExit('');
-    setReason('');
-    setEmotion('');
+    setJournal([newRow, ...journal]);
+    setEntry("");
+    setExit("");
+    setReason("");
+    setEmotion("");
   };
 
   const handleDelete = (index) => {
-    const updated = [...entries];
+    const updated = [...journal];
     updated.splice(index, 1);
-    setEntries(updated);
+    setJournal(updated);
   };
 
-  const totalTrades = entries.length;
-  const wins = entries.filter(e => Number(e.exit) > Number(e.entry)).length;
-  const losses = entries.filter(e => Number(e.exit) < Number(e.entry)).length;
-  const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+  const wins = journal.filter((j) => Number(j.exit) > Number(j.entry)).length;
+  const losses = journal.filter((j) => Number(j.exit) < Number(j.entry)).length;
+  const total = journal.length;
+  const winRate = total ? ((wins / total) * 100).toFixed(1) : 0;
+
+  const isSymbolValid = symbol && symbol.length >= 4;
 
   return (
-    <div className="container p-4">
-      <h1 className="title text-2xl font-bold text-cyan-400 mb-4">Firman Trading Diary</h1>
-
-      <div className="form grid grid-cols-6 gap-2 mb-4">
-        <DatePicker selected={date} onChange={(d) => setDate(d)} className="px-2 py-1 rounded" />
-        <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" className="px-2 py-1 rounded" />
-        <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Entry" className="px-2 py-1 rounded" />
-        <input value={exit} onChange={(e) => setExit(e.target.value)} placeholder="Exit" className="px-2 py-1 rounded" />
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Alasan" className="px-2 py-1 rounded" />
-        <input value={emotion} onChange={(e) => setEmotion(e.target.value)} placeholder="Emosi" className="px-2 py-1 rounded" />
-        <button onClick={handleSave} className="bg-green-600 text-white px-4 py-1 rounded col-span-6">Simpan</button>
+    <div className="p-4 text-white">
+      <h1 className="text-3xl font-bold mb-4 text-center text-sky-400">Firman Trading Diary</h1>
+      <div className="flex flex-wrap gap-2 justify-center mb-4">
+        <input placeholder="05/31/2025" className="bg-black border p-1" disabled />
+        <input placeholder="Kode Saham" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} className="bg-black border p-1" />
+        <input placeholder="Entry" value={entry} onChange={(e) => setEntry(e.target.value)} className="bg-black border p-1" />
+        <input placeholder="Exit" value={exit} onChange={(e) => setExit(e.target.value)} className="bg-black border p-1" />
+        <input placeholder="Alasan" value={reason} onChange={(e) => setReason(e.target.value)} className="bg-black border p-1" />
+        <input placeholder="Emosi" value={emotion} onChange={(e) => setEmotion(e.target.value)} className="bg-black border p-1" />
+        <button onClick={handleAdd} className="bg-green-600 px-3">Simpan</button>
       </div>
 
-      <div className="three-column-layout">
-        <div className="left-box">
-          <h3 className="text-pink-300 font-semibold mb-2">🧠 Analisis Groq</h3>
-          <p>{groqAnalysis || 'Memuat analisis...'}</p>
-        </div>
-
-        <div className="center-box">
-          <div ref={containerRef} id="tvchart" className="w-full min-h-[480px]" />
-        </div>
-
-        <div className="right-box">
-          <h3 className="text-white font-semibold mb-2">📈 Dashboard Mini</h3>
-          {signalData ? (
-            <SignalDashboard {...signalData} />
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-zinc-900 p-3">
+          <h2 className="text-pink-400 text-lg mb-2">🧠 Analisis Groq</h2>
+          {loading ? (
+            <p>Memuat analisis...</p>
+          ) : !isSymbolValid ? null : analysis === "error" ? (
+            <p className="text-red-400">Gagal memuat analisis.</p>
           ) : (
-            <p className="text-gray-400">Memuat sinyal...</p>
+            <p>{analysis}</p>
+          )}
+        </div>
+
+        <div className="bg-black p-3">
+          {isSymbolValid && <TradingViewWidget symbol={symbol} />}
+        </div>
+
+        <div className="bg-zinc-900 p-3">
+          <h2 className="text-pink-400 text-lg mb-2">📉 Dashboard Mini</h2>
+          {loading ? (
+            <p>Memuat sinyal...</p>
+          ) : !isSymbolValid ? null : signal === "error" ? (
+            <p className="text-red-400">Gagal memuat sinyal.</p>
+          ) : (
+            <SignalDashboard data={signal} />
           )}
         </div>
       </div>
 
       <div className="text-center mt-6">
-        <button
-          onClick={() => setShowTable(!showTable)}
-          className="toggle-table-btn"
-        >
-          {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
+        <button onClick={() => setShowTable(!showTable)} className="bg-green-600 px-4 py-1 rounded">
+          {showTable ? "Sembunyikan Tabel" : "Tampilkan Tabel"}
         </button>
       </div>
 
       {showTable && (
-        <div className="mt-6">
-          <div className="summary-dashboard-container">
-            <div className="summary-card">
-              <h2>Total Trade</h2>
-              <p>{totalTrades}</p>
-            </div>
-            <div className="summary-card">
-              <h2>Win Rate</h2>
-              <p>{winRate}%</p>
-            </div>
-            <div className="summary-card">
-              <h2>Gain / Loss</h2>
-              <p>{wins} / {losses}</p>
-            </div>
+        <>
+          <div className="flex justify-center mt-4 gap-6">
+            <div className="bg-black px-4 py-2 rounded">Total Trade<br /><strong>{total}</strong></div>
+            <div className="bg-black px-4 py-2 rounded">Win Rate<br /><strong>{winRate}%</strong></div>
+            <div className="bg-black px-4 py-2 rounded">Gain / Loss<br /><strong>{wins} / {losses}</strong></div>
           </div>
-
-          <table className="w-full text-sm text-white border border-gray-700">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="p-2">Tanggal</th>
-                <th>Symbol</th>
-                <th>Entry</th>
-                <th>Exit</th>
-                <th>Alasan</th>
-                <th>Emosi</th>
-                <th>Hapus</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, i) => (
-                <tr key={i} className="text-center border-t border-gray-700">
-                  <td className="p-2">{entry.date}</td>
-                  <td>{entry.symbol}</td>
-                  <td>{entry.entry}</td>
-                  <td>{entry.exit}</td>
-                  <td>{entry.reason}</td>
-                  <td>{entry.emotion}</td>
-                  <td>
-                    <button onClick={() => handleDelete(i)} className="text-red-500 hover:text-red-300">
-                      ❌
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <TradeTable journal={journal} onDelete={handleDelete} />
+        </>
       )}
     </div>
   );
