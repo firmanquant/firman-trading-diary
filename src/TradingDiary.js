@@ -18,19 +18,23 @@ const TradingDiary = () => {
   const [signalData, setSignalData] = useState(null);
   const containerRef = useRef(null);
 
+  // Load saved entries
   useEffect(() => {
     const saved = localStorage.getItem('tradingEntries');
     if (saved) setEntries(JSON.parse(saved));
   }, []);
 
+  // Save entries to localStorage
   useEffect(() => {
     localStorage.setItem('tradingEntries', JSON.stringify(entries));
   }, [entries]);
 
+  // Fetch analysis & signal when symbol changes
   useEffect(() => {
     if (!symbol) return;
+
     getSignalData(symbol)
-      .then(setSignalData)
+      .then((data) => setSignalData({ ...data, ticker: symbol })) // pastikan ticker ikut
       .catch(() => setSignalData(null));
 
     getGroqAnalysis(symbol)
@@ -38,9 +42,11 @@ const TradingDiary = () => {
       .catch(() => setGroqAnalysis('Gagal memuat analisis.'));
   }, [symbol]);
 
+  // Load TradingView chart
   useEffect(() => {
-    if (!window.TradingView || !containerRef.current) return;
+    if (!symbol || !window.TradingView || !containerRef.current) return;
     containerRef.current.innerHTML = '';
+
     new window.TradingView.widget({
       autosize: true,
       symbol: `IDX:${symbol}`,
@@ -49,12 +55,16 @@ const TradingDiary = () => {
       theme: 'dark',
       style: '1',
       locale: 'id',
-      container_id: containerRef.current.id || 'tvchart',
+      container_id: containerRef.current.id,
     });
   }, [symbol]);
 
   const handleSave = () => {
-    if (!symbol || !entry || !exit) return;
+    if (!symbol || !entry || !exit) {
+      alert('Mohon lengkapi kolom Kode Saham, Entry, dan Exit.');
+      return;
+    }
+
     const newEntry = {
       date: date.toLocaleDateString('id-ID'),
       symbol,
@@ -63,6 +73,7 @@ const TradingDiary = () => {
       reason: reason || 'x',
       emotion: emotion || 'x'
     };
+
     setEntries([newEntry, ...entries]);
     setSymbol('');
     setEntry('');
@@ -74,6 +85,7 @@ const TradingDiary = () => {
   return (
     <div className="container">
       <h1 className="title">Firman Trading Diary</h1>
+
       <div className="form">
         <DatePicker selected={date} onChange={(d) => setDate(d)} />
         <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="Kode Saham" />
@@ -88,10 +100,34 @@ const TradingDiary = () => {
         {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
       </button>
 
-      <div className="three-column-layout">
+      {showTable && (
+        <div className="mt-4 table-entries">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th>Tanggal</th><th>Symbol</th><th>Entry</th><th>Exit</th><th>Alasan</th><th>Emosi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry, i) => (
+                <tr key={i}>
+                  <td>{entry.date}</td>
+                  <td>{entry.symbol}</td>
+                  <td>{entry.entry}</td>
+                  <td>{entry.exit}</td>
+                  <td>{entry.reason}</td>
+                  <td>{entry.emotion}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="three-column-layout mt-4">
         <div className="left-box">
           <h3>🧠 Analisis Groq</h3>
-          <p>{groqAnalysis}</p>
+          <p>{groqAnalysis || 'Memuat analisis...'}</p>
         </div>
 
         <div className="center-box">
@@ -100,13 +136,15 @@ const TradingDiary = () => {
 
         <div className="right-box">
           <h3>📈 Dashboard Mini</h3>
-          {signalData ? <SignalDashboard {...signalData} /> : <p>Memuat sinyal...</p>}
+          {signalData ? (
+            <SignalDashboard {...signalData} groqAnalysis={groqAnalysis} />
+          ) : (
+            <p>Memuat sinyal...</p>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// trigger deploy
 
 export default TradingDiary;
