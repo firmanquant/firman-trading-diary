@@ -1,9 +1,11 @@
-export default function handler(req, res) {
-  if (req.method === 'POST') {
-    res.status(200).json({
-      response: `📊 Ini adalah analisis teknikal dummy untuk simbol: ${req.body.prompt}`
-    });
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
-  }
-}
+// src/api/groq.js
+export const getGroqAnalysis = async (symbol) => {
+  // Dummy response
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        response: `Analisis teknikal untuk saham ${symbol}: Tren naik, volume meningkat, dan sinyal beli kuat.`
+      });
+    }, 1000);
+  });
+};
