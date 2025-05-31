@@ -1,5 +1,5 @@
 export default function handler(req, res) {
-  const { prompt } = req.body;
+  const { prompt } = req.body || {};
 
   const dummyResponse = `Analisis teknikal untuk ${prompt || 'Saham'}:
 - Trend saat ini: Bullish
