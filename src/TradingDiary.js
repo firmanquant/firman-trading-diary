@@ -84,7 +84,6 @@ const TradingDiary = () => {
     setEntries(updated);
   };
 
-  // Stats
   const totalTrades = entries.length;
   const wins = entries.filter(e => Number(e.exit) > Number(e.entry)).length;
   const losses = entries.filter(e => Number(e.exit) < Number(e.entry)).length;
@@ -104,18 +103,18 @@ const TradingDiary = () => {
         <button onClick={handleSave} className="bg-green-600 text-white px-4 py-1 rounded col-span-6">Simpan</button>
       </div>
 
-      <div className="three-column-layout grid grid-cols-3 gap-4 items-start">
-        <div className="left-box bg-zinc-900 p-4 rounded min-h-[480px]">
-          <h3 className="text-pink-300 font-semibold mb-2">🧠 Analisis Groq</h3>
+      <div className="three-column-layout">
+        <div className="left-box">
+          <h3>🧠 Analisis Groq</h3>
           <p>{groqAnalysis || 'Memuat analisis...'}</p>
         </div>
 
-        <div className="center-box bg-black p-2 rounded min-h-[480px]">
-          <div ref={containerRef} id="tvchart" style={{ minHeight: '400px' }} />
+        <div className="center-box">
+          <div ref={containerRef} id="tvchart" className="tv-chart" />
         </div>
 
-        <div className="right-box bg-zinc-900 p-4 rounded min-h-[480px]">
-          <h3 className="text-white font-semibold mb-2">📈 Dashboard Mini</h3>
+        <div className="right-box">
+          <h3>📈 Dashboard Mini</h3>
           {signalData ? (
             <SignalDashboard {...signalData} />
           ) : (
@@ -127,7 +126,7 @@ const TradingDiary = () => {
       <div className="text-center mt-6">
         <button
           onClick={() => setShowTable(!showTable)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="toggle-table-btn"
         >
           {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
         </button>
@@ -135,10 +134,19 @@ const TradingDiary = () => {
 
       {showTable && (
         <div className="mt-6">
-          <div className="text-sm text-white mb-2">
-            <p>Total Trade: {totalTrades}</p>
-            <p>Win Rate: {winRate}%</p>
-            <p>Gain: {wins} | Loss: {losses}</p>
+          <div className="summary-dashboard-container">
+            <div className="summary-card">
+              <h2>Total Trade</h2>
+              <p>{totalTrades}</p>
+            </div>
+            <div className="summary-card">
+              <h2>Win Rate</h2>
+              <p>{winRate}%</p>
+            </div>
+            <div className="summary-card">
+              <h2>Gain / Loss</h2>
+              <p>{wins} / {losses}</p>
+            </div>
           </div>
 
           <table className="w-full text-sm text-white border border-gray-700">
