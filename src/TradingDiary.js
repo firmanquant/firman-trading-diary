@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import SignalDashboard from './SignalDashboard';
-import { getGroqAnalysis } from './api/groq';
-import { getSignalData } from './api/signal';
+import { getGroqAnalysis } from './lib/groq';
+import { getSignalData } from './lib/signal';
 
 const TradingDiary = () => {
   const [date, setDate] = useState(new Date());
