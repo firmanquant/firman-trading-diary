@@ -1,4 +1,4 @@
-// src/TradingDiary.js
+// TradingDiary.js (FINAL SINKRONISASI)
 import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -17,6 +17,7 @@ const TradingDiary = () => {
   const [showTable, setShowTable] = useState(false);
   const [groqAnalysis, setGroqAnalysis] = useState('');
   const [signalData, setSignalData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -30,14 +31,16 @@ const TradingDiary = () => {
 
   useEffect(() => {
     if (!symbol) return;
+    setIsLoading(true);
 
-    getSignalData(symbol)
-      .then((data) => setSignalData({ ...data, ticker: symbol }))
-      .catch(() => setSignalData(null));
-
-    getGroqAnalysis(symbol)
-      .then((res) => setGroqAnalysis(res.response || 'Gagal memuat analisis.'))
-      .catch(() => setGroqAnalysis('Gagal memuat analisis.'));
+    Promise.all([
+      getSignalData(symbol).catch(() => null),
+      getGroqAnalysis(symbol).catch(() => ({ response: 'Gagal memuat analisis.' }))
+    ]).then(([signal, groq]) => {
+      setSignalData(signal ? { ...signal, ticker: symbol } : null);
+      setGroqAnalysis(groq.response);
+      setIsLoading(false);
+    });
   }, [symbol]);
 
   useEffect(() => {
@@ -103,30 +106,26 @@ const TradingDiary = () => {
         <button onClick={handleSave} className="bg-green-600 text-white px-4 py-1 rounded col-span-6">Simpan</button>
       </div>
 
-      <div className="three-column-layout">
-        <div className="left-box">
-          <h3>🧠 Analisis Groq</h3>
-          <p>{groqAnalysis || 'Memuat analisis...'}</p>
+      <div className="three-column-layout grid grid-cols-3 gap-4 items-start">
+        <div className="left-box bg-zinc-900 p-4 rounded min-h-[480px]">
+          <h3 className="text-pink-300 font-semibold mb-2">🧠 Analisis Groq</h3>
+          {isLoading ? <p>Memuat analisis...</p> : <p>{groqAnalysis}</p>}
         </div>
 
-        <div className="center-box">
-          <div ref={containerRef} id="tvchart" className="tv-chart" />
+        <div className="center-box bg-black p-2 rounded min-h-[480px]">
+          <div ref={containerRef} id="tvchart" style={{ minHeight: '400px' }} />
         </div>
 
-        <div className="right-box">
-          <h3>📈 Dashboard Mini</h3>
-          {signalData ? (
-            <SignalDashboard {...signalData} />
-          ) : (
-            <p className="text-gray-400">Memuat sinyal...</p>
-          )}
+        <div className="right-box bg-zinc-900 p-4 rounded min-h-[480px]">
+          <h3 className="text-white font-semibold mb-2">📈 Dashboard Mini</h3>
+          {isLoading ? <p className="text-gray-400">Memuat sinyal...</p> : signalData && <SignalDashboard {...signalData} />}
         </div>
       </div>
 
       <div className="text-center mt-6">
         <button
           onClick={() => setShowTable(!showTable)}
-          className="toggle-table-btn"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
           {showTable ? 'Sembunyikan Tabel' : 'Tampilkan Tabel'}
         </button>
@@ -134,19 +133,10 @@ const TradingDiary = () => {
 
       {showTable && (
         <div className="mt-6">
-          <div className="summary-dashboard-container">
-            <div className="summary-card">
-              <h2>Total Trade</h2>
-              <p>{totalTrades}</p>
-            </div>
-            <div className="summary-card">
-              <h2>Win Rate</h2>
-              <p>{winRate}%</p>
-            </div>
-            <div className="summary-card">
-              <h2>Gain / Loss</h2>
-              <p>{wins} / {losses}</p>
-            </div>
+          <div className="text-sm text-white mb-2 flex justify-center gap-4">
+            <div className="summary-card"><h2>Total Trade</h2><p>{totalTrades}</p></div>
+            <div className="summary-card"><h2>Win Rate</h2><p>{winRate}%</p></div>
+            <div className="summary-card"><h2>Gain / Loss</h2><p>{wins} / {losses}</p></div>
           </div>
 
           <table className="w-full text-sm text-white border border-gray-700">
